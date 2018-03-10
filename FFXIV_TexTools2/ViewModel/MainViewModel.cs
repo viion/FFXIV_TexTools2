@@ -45,6 +45,11 @@ namespace FFXIV_TexTools2.ViewModel
         ObservableCollection<CategoryViewModel> oCategory;
         List<string> categoryList = new List<string>();
 
+        public ModelViewModel getMvm()
+        {
+            return MVM;
+        }
+
         public bool IsEnglish { get { return Properties.Settings.Default.Language.Equals("en"); } }
         public bool IsJapanese { get { return Properties.Settings.Default.Language.Equals("ja"); } }
         public bool IsGerman { get { return Properties.Settings.Default.Language.Equals("de"); } }
@@ -125,7 +130,7 @@ namespace FFXIV_TexTools2.ViewModel
 
             if (Properties.Settings.Default.Save_Directory.Equals(""))
             {
-                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/Saved";
+                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools";
                 Directory.CreateDirectory(md);
                 Properties.Settings.Default.Save_Directory = md;
                 Properties.Settings.Default.Save();
@@ -285,7 +290,7 @@ namespace FFXIV_TexTools2.ViewModel
 
             if (Properties.Settings.Default.FFXIV_Directory.Equals(""))
             {
-                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/Saved";
+                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools";
                 Directory.CreateDirectory(md);
                 Properties.Settings.Default.Save_Directory = md;
                 Properties.Settings.Default.Save();
@@ -339,7 +344,7 @@ namespace FFXIV_TexTools2.ViewModel
 
             if (Properties.Settings.Default.Save_Directory.Equals(""))
             {
-                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/Saved";
+                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools";
                 Directory.CreateDirectory(md);
                 Properties.Settings.Default.Save_Directory = md;
                 Properties.Settings.Default.Save();
@@ -351,6 +356,8 @@ namespace FFXIV_TexTools2.ViewModel
         /// </summary>
         private void CheckVersion()
         {
+            return;
+
             string xmlURL = "https://raw.githubusercontent.com/liinko/FFXIVTexToolsWeb/master/version.xml";
             string changeLog = "";
             string siteURL = "";
@@ -398,11 +405,9 @@ namespace FFXIV_TexTools2.ViewModel
 
                 if (curVersion.CompareTo(v) < 0)
                 {
-
-                    Update up = new Update();
-
-                    up.Message = "Version: " + v.ToString().Substring(0, 5) + "\n\nChange Log:\n" + changeLog + "\n\nPlease visit the website to download the update.";
-                    up.Show();
+                    // Update up = new Update();
+                    // up.Message = "Version: " + v.ToString().Substring(0, 5) + "\n\nChange Log:\n" + changeLog + "\n\nPlease visit the website to download the update.";
+                    // up.Show();
                 }
             }
             catch (Exception ex)

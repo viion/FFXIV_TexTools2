@@ -60,7 +60,7 @@
                 <MenuItem x:Name="Menu_Directories" Header="Directories" Click="Menu_Directories_Click"/>
                 <MenuItem x:Name="Save_All_DDS" Header="Save All DDS" Click="Save_All_DDS_Click" IsEnabled="False"/>
                 <MenuItem x:Name="Default_Race" Header="Default Race" Click="Default_Race_Click" />
-                
+
             </MenuItem>
             <MenuItem Header="Help">
                 <MenuItem x:Name="Menu_ProblemCheck" Header="Check For Problems" Click="Menu_ProblemCheck_Click"/>
@@ -86,13 +86,13 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="272*"/>
             </Grid.ColumnDefinitions>
-            <GroupBox x:Name="TexturesGroup" Header="Textures" Margin="5">
+            <GroupBox x:Name="TexturesGroup" Header="Textures" Margin="5,44,5.2,5">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="257*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TreeView x:Name="textureTreeView" ItemsSource="{Binding Category}"  Grid.Row="0" Margin="0,0,2,0" SelectedItemChanged="textureTreeView_SelectedItemChanged">
+                    <TreeView x:Name="textureTreeView" ItemsSource="{Binding Category}"  Grid.Row="0" Margin="1,222,1,18" SelectedItemChanged="textureTreeView_SelectedItemChanged">
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="{x:Type TreeViewItem}">
                                 <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
@@ -116,12 +116,13 @@
                         </TreeView.Resources>
                     </TreeView>
                     <Grid Grid.Row="1" Margin="0,0,2,0">
-                        <TextBox x:Name="searchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" TextWrapping="NoWrap"  VerticalAlignment="Bottom" TextChanged="TextBox_TextChanged">
+                        <TextBox x:Name="searchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" TextWrapping="NoWrap"  VerticalAlignment="Bottom" TextChanged="TextBox_TextChanged" Margin="0,-18,-1,17.6">
                             <TextBox.Background>
                                 <ImageBrush ImageSource="/FFXIV TexTools 2;component/Resources/search.png" AlignmentX="Left" Stretch="Uniform" />
                             </TextBox.Background>
                         </TextBox>
                     </Grid>
+                    <ListBox x:Name="logoutput" Height="205" VerticalAlignment="Top" Margin="1,7,10,0"/>
                 </Grid>
             </GroupBox>
             <GridSplitter x:Name="gridSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Center" Margin="0,52,0,49"/>
@@ -130,9 +131,10 @@
                     <views:TextureView/>
                 </TabItem>
                 <TabItem Header="3D Model" Width="100" Margin="-6,-2,-2,0" IsEnabled="{Binding ModelTabEnabled, FallbackValue=false}" DataContext="{Binding ModelVM}">
-                    <views:ModelView/>
+                    <views:ModelView Margin="0,-1,0.2,0.8"/>
                 </TabItem>
             </TabControl>
+            <Button Content="Export All 3D Data" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="142" Height="29" Click="Button_Click"/>
         </Grid>
 
     </Grid>

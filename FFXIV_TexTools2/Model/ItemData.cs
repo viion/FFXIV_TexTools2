@@ -23,6 +23,11 @@ namespace FFXIV_TexTools2.Model
     public class ItemData : IComparable
     {
         /// <summary>
+        /// The id of the item
+        /// </summary>
+        public string ItemId { get; set; }
+
+        /// <summary>
         /// The name of the item
         /// </summary>
         public string ItemName { get; set; }

@@ -27,5 +27,10 @@ namespace FFXIV_TexTools2.Views
         {
             InitializeComponent();
         }
+
+        private void exportObjButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+
+        }
     }
 }

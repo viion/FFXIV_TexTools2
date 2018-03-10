@@ -44,26 +44,24 @@ namespace FFXIV_TexTools2.IO
         /// <summary>
         /// Saves the model as an OBJ file with its associated textures
         /// </summary>
-        /// <param name="selectedCategory">The category of the item</param>
         /// <param name="modelName">The internal file name of the items model</param>
         /// <param name="selectedMesh">The currently selected mesh</param>
-        /// <param name="selectedItemName">the currently selected items name</param>
         /// <param name="meshData">The mesh data for the selected items model</param>
         /// <param name="meshList">The list of mesh data for the selected items model</param>
-        public static void Save(string selectedCategory, string modelName, string selectedMesh, string selectedItemName, List<MDLTEXData> meshData, List<ModelMeshData> meshList)
+        public static void Save(string modelName, string selectedMesh, List<MDLTEXData> meshData, List<ModelMeshData> meshList)
         {
             fullSkel.Clear();
             fullSkelnum.Clear();
 
-            Directory.CreateDirectory(Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/");
+            Directory.CreateDirectory(Properties.Settings.Default.Save_Directory + "/" + modelName + "/");
 
             if (!selectedMesh.Equals(Strings.All))
             {
                 int meshNum = int.Parse(selectedMesh);
 
-                File.WriteAllLines(Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + meshNum + ".obj", meshList[meshNum].OBJFileData);
+                File.WriteAllLines(Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + meshNum + ".obj", meshList[meshNum].OBJFileData);
 
-                var saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + meshNum + "_Diffuse.bmp";
+                var saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + meshNum + "_Diffuse.bmp";
 
                 using (var fileStream = new FileStream(saveDir, FileMode.Create))
                 {
@@ -72,7 +70,7 @@ namespace FFXIV_TexTools2.IO
                     encoder.Save(fileStream);
                 }
 
-                saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + meshNum + "_Normal.bmp";
+                saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + meshNum + "_Normal.bmp";
 
                 using (var fileStream = new FileStream(saveDir, FileMode.Create))
                 {
@@ -84,7 +82,7 @@ namespace FFXIV_TexTools2.IO
 
                 if (meshData[meshNum].Specular != null)
                 {
-                    saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + meshNum + "_Specular.bmp";
+                    saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + meshNum + "_Specular.bmp";
 
                     using (var fileStream = new FileStream(saveDir, FileMode.Create))
                     {
@@ -97,7 +95,7 @@ namespace FFXIV_TexTools2.IO
 
                 if (meshData[meshNum].Alpha != null)
                 {
-                    saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + meshNum + "_Alpha.bmp";
+                    saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + meshNum + "_Alpha.bmp";
 
                     using (var fileStream = new FileStream(saveDir, FileMode.Create))
                     {
@@ -109,7 +107,7 @@ namespace FFXIV_TexTools2.IO
 
                 if (meshData[meshNum].Emissive != null)
                 {
-                    saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + meshNum + "_Emissive.bmp";
+                    saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + meshNum + "_Emissive.bmp";
 
                     using (var fileStream = new FileStream(saveDir, FileMode.Create))
                     {
@@ -124,9 +122,9 @@ namespace FFXIV_TexTools2.IO
                 for (int i = 0; i < meshList.Count; i++)
                 {
 
-                    File.WriteAllLines(Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + i + ".obj", meshList[i].OBJFileData);
+                    File.WriteAllLines(Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + i + ".obj", meshList[i].OBJFileData);
 
-                    var saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + i + "_Diffuse.bmp";
+                    var saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + i + "_Diffuse.bmp";
 
                     using (var fileStream = new FileStream(saveDir, FileMode.Create))
                     {
@@ -135,7 +133,7 @@ namespace FFXIV_TexTools2.IO
                         encoder.Save(fileStream);
                     }
 
-                    saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + i + "_Normal.bmp";
+                    saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + i + "_Normal.bmp";
 
                     using (var fileStream = new FileStream(saveDir, FileMode.Create))
                     {
@@ -147,7 +145,7 @@ namespace FFXIV_TexTools2.IO
 
                     if (meshData[i].Specular != null)
                     {
-                        saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + i + "_Specular.bmp";
+                        saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + i + "_Specular.bmp";
 
                         using (var fileStream = new FileStream(saveDir, FileMode.Create))
                         {
@@ -159,7 +157,7 @@ namespace FFXIV_TexTools2.IO
 
                     if (meshData[i].Alpha != null)
                     {
-                        saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + i + "_Alpha.bmp";
+                        saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + i + "_Alpha.bmp";
 
                         using (var fileStream = new FileStream(saveDir, FileMode.Create))
                         {
@@ -171,7 +169,7 @@ namespace FFXIV_TexTools2.IO
 
                     if (meshData[i].Emissive != null)
                     {
-                        saveDir = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItemName + "/3D/" + modelName + "_" + i + "_Emissive.bmp";
+                        saveDir = Properties.Settings.Default.Save_Directory + "/" + modelName + "/" + modelName + "_" + i + "_Emissive.bmp";
 
                         using (var fileStream = new FileStream(saveDir, FileMode.Create))
                         {
@@ -183,9 +181,7 @@ namespace FFXIV_TexTools2.IO
 
                 }
             }
-
         }
-
 
         public static bool SaveCollada(string selectedCategory, string modelName, string selectedItemName, List<MDLTEXData> meshData, List<ModelMeshData> meshList, ModelData modelData)
         {
@@ -283,13 +279,13 @@ namespace FFXIV_TexTools2.IO
                 }
                 catch
                 {
-                    FlexibleMessageBox.Show("There was an issue reading the skeleton file.\n\nYour AssetCc2.exe may be outdated, version 2012+ is required.", "Save Model Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //FlexibleMessageBox.Show("There was an issue reading the skeleton file.\n\nYour AssetCc2.exe may be outdated, version 2012+ is required.", "Save Model Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
                 }
             }
             else if(runAsset && !hasAssetcc)
             {
-                FlexibleMessageBox.Show("No skeleton found for item. No .dae file will be saved. \n\nPlace AssetCc2(Not provided) in root folder to create skeleton.", "Save Model Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //FlexibleMessageBox.Show("No skeleton found for item. No .dae file will be saved. \n\nPlace AssetCc2(Not provided) in root folder to create skeleton.", "Save Model Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
@@ -2836,8 +2832,6 @@ namespace FFXIV_TexTools2.IO
             xmlWriter.WriteEndElement();
             //</scene>
         }
-
-
 
         private static void WriteBones(XmlWriter xmlWriter, JsonSkeleton skeleton, Dictionary<string, JsonSkeleton> boneDictionary)
         {

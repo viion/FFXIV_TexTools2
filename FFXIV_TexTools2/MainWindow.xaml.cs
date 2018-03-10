@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using FFXIV_TexTools2.Helpers;
+using FFXIV_TexTools2.IO;
 using FFXIV_TexTools2.Resources;
 using FFXIV_TexTools2.ViewModel;
 using FFXIV_TexTools2.Views;
@@ -255,8 +256,13 @@ namespace FFXIV_TexTools2
         private void textureTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             var item = e.NewValue as CategoryViewModel;
+            actionSelectedItemChanged(item);
+        }
+
+        private void actionSelectedItemChanged(CategoryViewModel item)
+        {
             CategoryViewModel topLevel = null;
-            if(item!= null)
+            if (item != null)
             {
                 Save_All_DDS.IsEnabled = true;
                 var itemParent = item.Parent;
@@ -469,5 +475,39 @@ namespace FFXIV_TexTools2
                 itemSelected.IsSelected = true;
             }
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            CategoryViewModel Gear = (CategoryViewModel)textureTreeView.Items.GetItemAt(0);
+            Gear.IsSelected = true;
+
+            foreach (CategoryViewModel category in Gear.Children)
+            {
+                category.IsExpanded = true;
+                category.IsSelected = true;
+                logoutput.Items.Add("Category: " + category.Name.ToString() + " - Items: " + category.Children.Count.ToString());
+
+                foreach (CategoryViewModel item in category.Children)
+                {
+                    item.IsExpanded = true;
+                    item.IsSelected = true;
+                    actionSelectedItemChanged(item);
+
+                    logoutput.Items.Add("- Item: " + item.Name.ToString() + " -- "+ mViewModel.getMvm().getModelName());
+
+                    SaveModel.Save(
+                        mViewModel.getMvm().getModelName(),
+                        mViewModel.getMvm().getSelectedMeshId(),
+                        mViewModel.getMvm().getMeshData(),
+                        mViewModel.getMvm().getMeshList()
+                    );
+
+                    break;
+                }
+
+                break;
+            }
+        }
+
     }
 }

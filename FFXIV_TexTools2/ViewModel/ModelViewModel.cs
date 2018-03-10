@@ -252,7 +252,6 @@ namespace FFXIV_TexTools2.ViewModel
             get { return new RelayCommand(SetReflection); }
         }
 
-
         /// <summary>
         /// Sets the reflectivity(Specular Shininess) of the model
         /// </summary>
@@ -316,14 +315,38 @@ namespace FFXIV_TexTools2.ViewModel
             Process.Start(savePath);
         }
 
+        public string getModelName()
+        {
+            return modelName;
+        }
+
+        public string getSelectedMeshId()
+        {
+            return SelectedMesh.ID;
+        }
+
+        public List<MDLTEXData> getMeshData()
+        {
+            return meshData;
+        }
+
+        public List<ModelMeshData> getMeshList()
+        {
+            return meshList;
+        }
+
+
+
+
         /// <summary>
         /// Saves the model and created textures as an OBJ file
         /// </summary>
         /// <param name="obj"></param>
-        private void ExportOBJ(object obj)
+        public void ExportOBJ(object obj)
         {
-            SaveModel.Save(selectedCategory, modelName, SelectedMesh.ID, selectedItem.ItemName, meshData, meshList);
+            SaveModel.Save(modelName, SelectedMesh.ID, meshData, meshList);
 
+            /*
             try
             {
                 var result = SaveModel.SaveCollada(selectedCategory, modelName, selectedItem.ItemName, meshData, meshList, modelData);
@@ -334,9 +357,10 @@ namespace FFXIV_TexTools2.ViewModel
             }
             catch (Exception ex)
             {
-                FlexibleMessageBox.Show("[Collada] Error saving .dae File \n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Debug.WriteLine(ex.StackTrace);
+                // FlexibleMessageBox.Show("[Collada] Error saving .dae File \n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Debug.WriteLine(ex.StackTrace);
             }
+            */
 
             OpenEnabled = true;
         }
@@ -448,7 +472,6 @@ namespace FFXIV_TexTools2.ViewModel
                 UpdateModel(selectedItem, selectedCategory);
             }
         }
-
 
         /// <summary>
         /// Disposes of the view model data
@@ -820,7 +843,6 @@ namespace FFXIV_TexTools2.ViewModel
                 disposing = true;
                 CompositeVM.Dispose();
             }
-
 
             try
             {
@@ -1383,8 +1405,6 @@ namespace FFXIV_TexTools2.ViewModel
                 return info.Item1;
             }
         }
-
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 

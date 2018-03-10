@@ -58,7 +58,7 @@ namespace FFXIV_TexTools2.ViewModel
 
         bool second = false;
         bool disposed = false;
-        bool disposing = false;
+        //bool disposing = false;
 
         List<MDLTEXData> mData;
         Stream diffuse, normal, specular, alpha, emissive;
@@ -88,7 +88,7 @@ namespace FFXIV_TexTools2.ViewModel
         public void UpdateModel(List<MDLTEXData> meshData, ItemData item)
         {
             disposed = false;
-            disposing = false;
+            //disposing = false;
 
             mData = meshData;
 

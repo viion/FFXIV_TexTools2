@@ -83,7 +83,7 @@ namespace FFXIV_TexTools2.Views
                     }
                     catch
                     {
-                        var newLoc = folderSelect.FileName + "\\Saved";
+                        var newLoc = folderSelect.FileName;
                         Directory.CreateDirectory(newLoc);
 
                         foreach (string dirPath in Directory.GetDirectories(oldSaveLocation, "*", SearchOption.AllDirectories))
@@ -101,15 +101,15 @@ namespace FFXIV_TexTools2.Views
                 }
                 else
                 {
-                    Directory.CreateDirectory(folderSelect.FileName + "/Saved");
+                    Directory.CreateDirectory(folderSelect.FileName);
                 }
 
-                Properties.Settings.Default.Save_Directory = folderSelect.FileName + "/Saved";
+                Properties.Settings.Default.Save_Directory = folderSelect.FileName;
                 Properties.Settings.Default.Save();
 
                FlexibleMessageBox.Show("Location of Saved folder changed.\n\n" +
-                    "New Location: " + folderSelect.FileName + "\\Saved", "New Directory",MessageBoxButtons.OK,MessageBoxIcon.Information);
-                saveDir.Text = folderSelect.FileName + "\\Saved";
+                    "New Location: " + folderSelect.FileName, "New Directory",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                saveDir.Text = folderSelect.FileName;
             }
         }
 

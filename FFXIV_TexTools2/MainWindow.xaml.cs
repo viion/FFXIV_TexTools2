@@ -16,6 +16,7 @@
 
 using FFXIV_TexTools2.Helpers;
 using FFXIV_TexTools2.IO;
+using FFXIV_TexTools2.Model;
 using FFXIV_TexTools2.Resources;
 using FFXIV_TexTools2.ViewModel;
 using FFXIV_TexTools2.Views;
@@ -25,7 +26,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -39,6 +39,15 @@ namespace FFXIV_TexTools2
     public partial class MainWindow : Window
     {
         MainViewModel mViewModel;
+        CategoryViewModel selectedItem;
+
+        List<string> baseRace = new List<string>
+        {
+            {Strings.Hyur_M },
+            {Strings.Hyur_H },
+            {Strings.AuRa_Raen },
+            {Strings.AuRa_Xaela }
+        };
 
         public MainWindow()
         {
@@ -57,7 +66,7 @@ namespace FFXIV_TexTools2
             DXVerButton.Content = "DX Version: " + dxver.Substring(2);
 
             List<System.Windows.Controls.MenuItem> miList = new List<System.Windows.Controls.MenuItem>();
-            foreach(var br in Info.baseRace)
+            foreach(var br in baseRace)
             {
                 System.Windows.Controls.MenuItem mi = new System.Windows.Controls.MenuItem();
                 mi.Header = br;
@@ -179,11 +188,6 @@ namespace FFXIV_TexTools2
             ml.Show();
         }
 
-        private void Menu_Importer_Click(object sender, RoutedEventArgs e)
-        {
-            //Not yet implemented
-        }
-
         private void Menu_Directories_Click(object sender, RoutedEventArgs e)
         {
             DirectoriesView dv = new DirectoriesView();
@@ -198,7 +202,7 @@ namespace FFXIV_TexTools2
             }
             catch (Exception ex)
             {
-                FlexibleMessageBox.Show("[Main] Error Accessing .modlist File \n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                FlexibleMessageBox.Show("Error Accessing .modlist File \n" + ex.Message, "MainWindow Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
         }
@@ -243,7 +247,7 @@ namespace FFXIV_TexTools2
             }
             catch (Exception ex)
             {
-                FlexibleMessageBox.Show("[Main] Error Accessing .modlist File \n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                FlexibleMessageBox.Show("Error Accessing .modlist File \n" + ex.Message, "MainWindow Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
         }
@@ -261,6 +265,7 @@ namespace FFXIV_TexTools2
 
         private void actionSelectedItemChanged(CategoryViewModel item)
         {
+            selectedItem = item;
             CategoryViewModel topLevel = null;
             if (item != null)
             {
@@ -301,7 +306,6 @@ namespace FFXIV_TexTools2
                     }
 
                 }
-
             }
             else
             {
@@ -322,11 +326,13 @@ namespace FFXIV_TexTools2
 
             if (!Helper.IsIndexLocked(true))
             {
-                if (FlexibleMessageBox.Show("Starting over will:\n\n" +
+                var result = FlexibleMessageBox.Show("Starting over will:\n\n" +
                     "Restore index files to their original state.\n" +
                     "Delete all mods and create new .dat files.\n" +
                     "Delete all .modlist file entries.\n\n" +
-                    "Do you want to start over?", "Start Over",MessageBoxButtons.YesNo,MessageBoxIcon.Information) == System.Windows.Forms.DialogResult.Yes)
+                    "Do you want to start over?", "Start Over", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+                if (result == System.Windows.Forms.DialogResult.Yes)
                 {
 
                     RevertAll();
@@ -363,6 +369,47 @@ namespace FFXIV_TexTools2
                     File.Delete(Properties.Settings.Default.Modlist_Directory);
 
                     MakeModContainers();
+                }
+
+                if (result == System.Windows.Forms.DialogResult.Yes && selectedItem != null)
+                {
+                    CategoryViewModel topLevel = null;
+                    var itemParent = selectedItem.Parent;
+
+                    while (itemParent != null)
+                    {
+                        topLevel = itemParent;
+                        itemParent = itemParent.Parent;
+                    }
+
+                    if (selectedItem.ItemData != null)
+                    {
+                        if (!topLevel.Name.Equals("UI"))
+                        {
+                            mViewModel.TextureVM.UpdateTexture(selectedItem.ItemData, selectedItem.Parent.Name);
+
+                            if (selectedItem.Name.Equals(Strings.Face_Paint) || selectedItem.Name.Equals(Strings.Equipment_Decals))
+                            {
+                                tabControl.SelectedIndex = 0;
+                                if (mViewModel.ModelVM != null)
+                                {
+                                    mViewModel.ModelVM.ModelTabEnabled = false;
+                                }
+                            }
+                            else
+                            {
+                                mViewModel.ModelVM.UpdateModel(selectedItem.ItemData, selectedItem.Parent.Name);
+                                mViewModel.ModelVM.ModelTabEnabled = true;
+                            }
+                        }
+                        else
+                        {
+                            tabControl.SelectedIndex = 0;
+                            mViewModel.TextureVM.UpdateTexture(selectedItem.ItemData, "UI");
+                            mViewModel.ModelVM.ModelTabEnabled = false;
+                        }
+
+                    }
                 }
             }
         }
@@ -509,5 +556,44 @@ namespace FFXIV_TexTools2
             }
         }
 
+        private void PKEmporium_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("https://prettykittyemporium.blogspot.com/");
+
+        }
+
+        private void NexusMods_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("https://www.nexusmods.com/finalfantasy14");
+
+        }
+
+        private void Menu_MakeModpack_Click(object sender, RoutedEventArgs e)
+        {
+            MakeModPack mmp = new MakeModPack();
+            mmp.Show();
+        }
+
+        private void Menu_ImportModpack_Click(object sender, RoutedEventArgs e)
+        {
+            string mpDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\TexTools\\ModPacks";
+
+            if (!Directory.Exists(mpDir))
+            {
+                Directory.CreateDirectory(mpDir);
+            }
+
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.InitialDirectory = mpDir;
+            ofd.Filter = "TexTools ModPack (*.ttmp)|*.ttmp";
+
+            if(ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ImportModPack imp = new ImportModPack(ofd.FileName);
+                imp.Show();
+            }
+
+
+        }
     }
 }

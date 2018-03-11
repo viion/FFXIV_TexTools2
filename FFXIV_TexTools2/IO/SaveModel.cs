@@ -192,8 +192,7 @@ namespace FFXIV_TexTools2.IO
                 skelName = "c0101";
             }
 
-            //string[] skeleton1 = File.ReadAllLines(Directory.GetCurrentDirectory() + "/Skeletons/" + skelName + ".skel");
-            string[] skeleton1 = File.ReadAllLines(Directory.GetCurrentDirectory() + "/Skeletons/c1401.skel");
+            string[] skeleton1 = File.ReadAllLines(Directory.GetCurrentDirectory() + "/Skeletons/" + skelName + ".skel");            
 
             Dictionary<string, JsonSkeleton> skelDict = new Dictionary<string, JsonSkeleton>();
 
@@ -273,6 +272,7 @@ namespace FFXIV_TexTools2.IO
                     proc.WaitForExit();
                 }
                 skelDict.Clear();
+
                 try
                 {
                     skelDict = ParseSkeleton(skelLoc + sklbName + ".xml", meshList);
@@ -484,7 +484,7 @@ namespace FFXIV_TexTools2.IO
                     }
                     else
                     {
-                        FlexibleMessageBox.Show("[SaveModel] Unknown Data format (" + format + ") please submit a bug report.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        FlexibleMessageBox.Show("Unknown Data format (" + format + ") please submit a bug report.", "SaveModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                         throw new FormatException();
                     }
@@ -672,7 +672,7 @@ namespace FFXIV_TexTools2.IO
 
             var lastBone = fullSkelnum.Last().Value;
 
-            if (skelFileName[0].Equals('m'))
+            if (skelFileName[0].Equals('m') || skelFileName[0].Equals('d'))
             {
                 fullSkel.Clear();
                 fullSkelnum.Clear();

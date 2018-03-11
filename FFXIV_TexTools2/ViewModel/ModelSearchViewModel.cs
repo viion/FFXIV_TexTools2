@@ -463,7 +463,7 @@ namespace FFXIV_TexTools2.ViewModel
                 }
                 else
                 {
-                    //string slotName = "DemiHuman";
+                    string slotName = "DemiHuman";
 
                     for (int i = 0; i <= 100; i++)
                     {

@@ -496,7 +496,11 @@ namespace FFXIV_TexTools2
             {
                 category.IsExpanded = true;
                 category.IsSelected = true;
-                logoutput.Items.Add("Category: " + category.Name.ToString() + " - Items: " + category.Children.Count.ToString());
+
+                string time = string.Format("{0:HH:mm:ss tt}", DateTime.Now);
+                string logfilename = "E:\\xivdb\\FFXIV_TextTools2_Output\\log.txt";
+  
+                File.AppendAllText(logfilename, time + " - Category: " + category.Name.ToString() + " - Items: " + category.Children.Count.ToString() + Environment.NewLine);
 
                 foreach (CategoryViewModel item in category.Children)
                 {
@@ -511,7 +515,7 @@ namespace FFXIV_TexTools2
                         mViewModel.getMvm().getMeshList()
                     );
 
-                    logoutput.Items.Add("- Saved: " + item.Name.ToString() + " -- " + mViewModel.getMvm().getModelName());
+                    File.AppendAllText(logfilename, time + " - Saved: " + item.Name.ToString() + " -- " + mViewModel.getMvm().getModelName() + Environment.NewLine);
                 }
 
                 break;

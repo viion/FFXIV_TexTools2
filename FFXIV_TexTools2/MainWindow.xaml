@@ -91,7 +91,7 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="272*"/>
             </Grid.ColumnDefinitions>
-            <GroupBox x:Name="TexturesGroup" Header="Textures" Margin="5,172,5.2,5">
+            <GroupBox x:Name="TexturesGroup" Header="Textures" Margin="5,44,5.2,5">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="257*"/>
@@ -127,7 +127,6 @@
                             </TextBox.Background>
                         </TextBox>
                     </Grid>
-                    <ListBox x:Name="logoutput" Height="126" VerticalAlignment="Top" Margin="0,-144,-5,0" HorizontalAlignment="Left" Width="301"/>
                 </Grid>
             </GroupBox>
             <GridSplitter x:Name="gridSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Center" Margin="0,52,0,49"/>

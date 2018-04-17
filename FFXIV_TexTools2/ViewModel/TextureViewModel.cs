@@ -26,6 +26,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -34,6 +35,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 
 namespace FFXIV_TexTools2.ViewModel
@@ -45,15 +47,15 @@ namespace FFXIV_TexTools2.ViewModel
         TEXData texData;
         MTRLData mtrlData;
         ColorChannels imageEffect;
-        Bitmap saveClone;
 
         string activeToggle = "Enable/Disable";
+        string translucencyToggle = "Translucency OFF";
         string selectedCategory, imcVersion, fullPath, textureType, textureDimensions, fullPathString, VFXVersion;
 
         int raceIndex, mapIndex, typeIndex, partIndex, currMap;
 
         bool redChecked = true, greenChecked = true, blueChecked = true;
-        bool alphaChecked, raceEnabled, mapEnabled, typeEnabled, partEnabled, importEnabled, activeEnabled, saveEnabled, channelsEnabled, openEnabled;
+        bool alphaChecked, raceEnabled, mapEnabled, typeEnabled, partEnabled, importEnabled, activeEnabled, saveEnabled, channelsEnabled, openEnabled, translucencyEnabled;
 
 
         private ObservableCollection<ComboBoxInfo> raceComboInfo = new ObservableCollection<ComboBoxInfo>();
@@ -88,8 +90,10 @@ namespace FFXIV_TexTools2.ViewModel
         public bool TypeEnabled { get { return typeEnabled; } set { typeEnabled = value; NotifyPropertyChanged("TypeEnabled"); } }
         public bool PartEnabled { get { return partEnabled; } set { partEnabled = value; NotifyPropertyChanged("PartEnabled"); } }
         public bool OpenEnabled { get { return openEnabled; } set { openEnabled = value; NotifyPropertyChanged("OpenEnabled"); } }
+        public bool TranslucencyEnabled { get { return translucencyEnabled; } set { translucencyEnabled = value; NotifyPropertyChanged("TranslucencyEnabled"); } }
 
         public string ActiveToggle { get { return activeToggle; } set { activeToggle = value; NotifyPropertyChanged("ActiveToggle"); } }
+        public string TranslucencyToggle { get { return translucencyToggle; } set { translucencyToggle = value; NotifyPropertyChanged("TranslucencyToggle"); } }
         public bool ImportEnabled { get { return importEnabled; } set { importEnabled = value; NotifyPropertyChanged("ImportEnabled"); } }
         public bool ActiveEnabled { get { return activeEnabled; } set { activeEnabled = value; NotifyPropertyChanged("ActiveEnabled"); } }
         public bool SaveEnabled { get { return saveEnabled; } set { saveEnabled = value; NotifyPropertyChanged("SaveEnabled"); } }
@@ -107,7 +111,7 @@ namespace FFXIV_TexTools2.ViewModel
 
             if (!category.Equals("UI"))
             {
-                var imcData = IMC.GetVersion(selectedCategory, selectedItem, false);
+                var imcData = IMC.GetVersion(selectedCategory, selectedItem, false, false);
 
                 imcVersion = imcData.Item1;
                 VFXVersion = imcData.Item2;
@@ -200,11 +204,45 @@ namespace FFXIV_TexTools2.ViewModel
         }
 
         /// <summary>
+        /// Command for Enable/Disable button
+        /// </summary>
+        public ICommand TranslucencyCommand
+        {
+            get { return new RelayCommand(Translucency); }
+        }
+
+        /// <summary>
         /// Command for Open Folder button
         /// </summary>
         public ICommand OpenFolderCommand
         {
             get { return new RelayCommand(OpenFolder); }
+        }
+
+        /// <summary>
+        /// Runs the SaveDDS method from SaveTex 
+        /// </summary>
+        /// <param name="obj"></param>
+        private void Translucency(object obj)
+        {
+            var newOffset = 0;
+            if (TranslucencyToggle.Contains("OFF"))
+            {
+                newOffset = ChangeMTRL.TranslucencyToggle(mtrlData, selectedCategory, selectedItem.ItemName, true);
+                TranslucencyToggle = "Translucency ON";
+                mtrlData.ShaderNum = 0x1D;
+            }
+            else if (TranslucencyToggle.Contains("ON"))
+            {
+                newOffset = ChangeMTRL.TranslucencyToggle(mtrlData, selectedCategory, selectedItem.ItemName, false);
+                TranslucencyToggle = "Translucency OFF";
+                mtrlData.ShaderNum = 0x0D;
+            }
+
+            if (newOffset != 0)
+            {
+                mtrlData.MTRLOffset = newOffset;
+            }
         }
 
         /// <summary>
@@ -224,7 +262,7 @@ namespace FFXIV_TexTools2.ViewModel
         /// <param name="obj"></param>
         public void SavePNG(object obj)
         {
-            SaveTex.SaveImage(selectedCategory, selectedItem.ItemName, fullPath, ImageSource, saveClone, SelectedMap.Name, selectedItem.ItemCategory);
+            SaveTex.SaveImage(selectedCategory, selectedItem.ItemName, fullPath, ImageSource, texData, SelectedMap.Name, selectedItem.ItemCategory);
             OpenEnabled = true;
         }
 
@@ -635,7 +673,7 @@ namespace FFXIV_TexTools2.ViewModel
                 {
                     if (selectedItem.PrimaryMTRLFolder.Contains("weapon"))
                     {
-                        var imcData = IMC.GetVersion(selectedCategory, selectedItem, false);
+                        var imcData = IMC.GetVersion(selectedCategory, selectedItem, false, false);
 
                         imc = imcData.Item1;
                         vfx = imcData.Item2;
@@ -649,7 +687,7 @@ namespace FFXIV_TexTools2.ViewModel
 
                 if (SelectedPart.Name.Equals("s"))
                 {
-                    var imcData = IMC.GetVersion(selectedCategory, selectedItem, true);
+                    var imcData = IMC.GetVersion(selectedCategory, selectedItem, true, false);
 
                     imc = imcData.Item1;
                     vfx = imcData.Item2;
@@ -782,6 +820,7 @@ namespace FFXIV_TexTools2.ViewModel
         private void TypeComboBoxChanged()
         {
             string type;
+            string part = "a";
 
             if (selectedCategory.Equals(Strings.Mounts) || selectedCategory.Equals(Strings.Monster) || selectedCategory.Equals(Strings.DemiHuman))
             {
@@ -789,7 +828,8 @@ namespace FFXIV_TexTools2.ViewModel
 
                 if (isDemiHuman)
                 {
-                    type = Info.slotAbr[selectedType.Name];
+                    type = Info.slotAbr[selectedPart.Name];
+                    part = selectedType.Name;
                 }
                 else
                 {
@@ -802,7 +842,7 @@ namespace FFXIV_TexTools2.ViewModel
             }
 
 
-            var info = MTRL.GetMTRLDatafromType(selectedItem, selectedRace.ID, selectedPart.Name, type, imcVersion, selectedCategory, "a");
+            var info = MTRL.GetMTRLDatafromType(selectedItem, selectedRace.ID, selectedPart.Name, type, imcVersion, selectedCategory, part);
             mtrlData = info.Item1;
 
             MapComboBox = info.Item2;
@@ -859,12 +899,6 @@ namespace FFXIV_TexTools2.ViewModel
         /// </summary>
         private void MapComboBoxChanged()
         {
-            if(saveClone != null)
-            {
-                //saveClone.UnlockBits(cloneLock);
-                saveClone.Dispose();
-            }
-
             Bitmap colorBmp = null;
             int offset = 0;
             bool isVFX = false;
@@ -921,7 +955,7 @@ namespace FFXIV_TexTools2.ViewModel
             }
             else if (selectedMap.Name.Equals(Strings.ColorSet))
             {
-                colorBmp = TEX.TextureToBitmap(mtrlData.ColorData, 9312, 4, 16);
+                colorBmp = TEX.ColorSetToBitmap(mtrlData.ColorData);
                 fullPath = mtrlData.MTRLPath;
                 FullPathString = fullPath;
             }
@@ -1039,22 +1073,47 @@ namespace FFXIV_TexTools2.ViewModel
                 ActiveToggle = "Enable/Disable";
             }
 
-            if (offset == 0)
+            if (offset == 0 && colorBmp != null)
             {
                 TextureType = "Type: 16.16.16.16f ABGR\nMipMaps: None";
 
                 TextureDimensions = "(4 x 16)";
 
-                alphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(colorBmp.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                alphaBitmap.Freeze();
+                try
+                {
+                    alphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(colorBmp.GetHbitmap(), IntPtr.Zero,
+                        Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    alphaBitmap.Freeze();
+                }
+                catch (Exception e)
+                {
+                    FlexibleMessageBox.Show("alphaBitmap Error\n\nItem: " + selectedItem.ItemName + "\nMap: " + SelectedMap.Name + "\n\n" + e.Message,
+                        "TextureViewModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
 
                 var removeAlphaBitmap = SetAlpha(colorBmp, 255);
 
-                noAlphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(removeAlphaBitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                noAlphaBitmap.Freeze();
+                try
+                {
+                    noAlphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(removeAlphaBitmap.GetHbitmap(), IntPtr.Zero,
+                        Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    noAlphaBitmap.Freeze();
+                }
+                catch (Exception e)
+                {
+                    FlexibleMessageBox.Show("noAlphaBitmap Error\n\nItem: " + selectedItem.ItemName + "\nMap: " + SelectedMap.Name + "\n\n" + e.Message,
+                        "TextureViewModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
 
                 colorBmp.Dispose();
                 removeAlphaBitmap.Dispose();
+            }
+            else if (offset == 0 && colorBmp == null)
+            {
+                alphaBitmap = noAlphaBitmap =
+                    new BitmapImage(
+                        new Uri("pack://application:,,,/FFXIV TexTools 2;component/Resources/textureDNE.png"));
             }
             else
             {
@@ -1083,21 +1142,30 @@ namespace FFXIV_TexTools2.ViewModel
                 
                 TextureDimensions = "(" + texData.Width + " x " + texData.Height + ")";
 
-                var clonerect = new Rectangle(0, 0, texData.Width, texData.Height);
-                saveClone = texData.BMP.Clone(new Rectangle(0, 0, texData.Width, texData.Height), PixelFormat.Format32bppArgb);
+                var scale = 1;
 
-                alphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(texData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                if (texData.Width >= 4096 || texData.Height >= 4096)
+                {
+                    scale = 4;
+                }
+                else if (texData.Width >= 2048 || texData.Height >= 2048)
+                {
+                    scale = 2;
+                }
+
+                var nWidth = texData.Width / scale;
+                var nHeight = texData.Height / scale;
+
+                var resizedAlphaImage = TexHelper.CreateResizedImage(texData.BMPSouceAlpha, nWidth, nHeight);
+
+                alphaBitmap = (BitmapSource)resizedAlphaImage;
                 alphaBitmap.Freeze();
 
+                var resizedNoAlphaImage = TexHelper.CreateResizedImage(texData.BMPSouceNoAlpha, nWidth, nHeight);
 
-                var removeAlphaBitmap = SetAlpha(texData.BMP, 255);
-
-                noAlphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(removeAlphaBitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                noAlphaBitmap = (BitmapSource)resizedNoAlphaImage;
                 noAlphaBitmap.Freeze();
-
-                removeAlphaBitmap.Dispose();
             }
-
 
             try
             {
@@ -1116,8 +1184,6 @@ namespace FFXIV_TexTools2.ViewModel
             ChannelsEnabled = true;
 
             SaveEnabled = true;
-
-            texData.Dispose();
 
             string dxPath = Path.GetFileNameWithoutExtension(fullPath);
 
@@ -1150,6 +1216,25 @@ namespace FFXIV_TexTools2.ViewModel
             {
                 OpenEnabled = false;
             }
+
+            var shaderNum = mtrlData.ShaderNum;
+
+            if (shaderNum == 0x0D)
+            {
+                TranslucencyToggle = "Translucency OFF";
+                TranslucencyEnabled = true;
+            }
+            else if (shaderNum == 0x1D)
+            {
+                TranslucencyToggle = "Translucency ON";
+                TranslucencyEnabled = true;
+            }
+            else
+            {
+                TranslucencyToggle = "Not Supported";
+                TranslucencyEnabled = false;
+            }
+
         }
 
         /// <summary>
@@ -1203,18 +1288,49 @@ namespace FFXIV_TexTools2.ViewModel
                     TextureType = "Type: 16.16.16.16f ABGR\nMipMaps: 0";
                     TextureDimensions = "(4 x 16)";
 
-                    alphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(colorBMP.Item1.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                    alphaBitmap.Freeze();
+                    try
+                    {
+                        alphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(colorBMP.Item1.GetHbitmap(), IntPtr.Zero,
+                            Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                        alphaBitmap.Freeze();
+                    }
+                    catch (Exception e)
+                    {
+                        FlexibleMessageBox.Show("alphaBitmap Update Error\n\nItem: " + selectedItem.ItemName + "\nMap: " + SelectedMap.Name + "\n\n" + e.Message,
+                            "TextureViewModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
 
                     var removeAlphaBitmap = SetAlpha(colorBMP.Item1, 255);
 
-                    noAlphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(removeAlphaBitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                    noAlphaBitmap.Freeze();
+                    try
+                    {
+                        noAlphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(removeAlphaBitmap.GetHbitmap(),
+                            IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                        noAlphaBitmap.Freeze();
+                    }
+                    catch (Exception e)
+                    {
+                        FlexibleMessageBox.Show("noAlphaBitmap Update Error\n\nItem: " + selectedItem.ItemName + "\nMap: " + SelectedMap.Name + "\n\n" + e.Message,
+                            "TextureViewModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
 
                     mtrlData.ColorData = colorBMP.Item2;
 
                     colorBMP.Item1.Dispose();
                     removeAlphaBitmap.Dispose();
+
+                    mtrlData.ShaderNum = colorBMP.Item3;
+
+                    if (colorBMP.Item3 == 0x0D)
+                    {
+                        TranslucencyToggle = "Translucency OFF";
+                    }
+                    else if (colorBMP.Item3 == 0x1D)
+                    {
+                        TranslucencyToggle = "Translucency ON";
+                    }
                 }
                 else
                 {
@@ -1242,14 +1358,30 @@ namespace FFXIV_TexTools2.ViewModel
                     TextureType = "Type: " + texData.TypeString + "\nMipMaps: " + mipMaps;
                     TextureDimensions = "(" + texData.Width + " x " + texData.Height + ")";
 
-                    alphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(texData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
 
-                    var removeAlphaBitmap = SetAlpha(texData.BMP, 255);
+                    var scale = 1;
 
-                    noAlphaBitmap = Imaging.CreateBitmapSourceFromHBitmap(removeAlphaBitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    if (texData.Width >= 4096 || texData.Height >= 4096)
+                    {
+                        scale = 4;
+                    }
+                    else if (texData.Width >= 2048 || texData.Height >= 2048)
+                    {
+                        scale = 2;
+                    }
 
-                    texData.Dispose();
-                    removeAlphaBitmap.Dispose();
+                    var nWidth = texData.Width / scale;
+                    var nHeight = texData.Height / scale;
+
+                    var resizedAlphaImage = TexHelper.CreateResizedImage(texData.BMPSouceAlpha, nWidth, nHeight);
+
+                    alphaBitmap = (BitmapSource)resizedAlphaImage;
+                    alphaBitmap.Freeze();
+
+                    var resizedNoAlphaImage = TexHelper.CreateResizedImage(texData.BMPSouceNoAlpha, nWidth, nHeight);
+
+                    noAlphaBitmap = (BitmapSource)resizedNoAlphaImage;
+                    noAlphaBitmap.Freeze();
                 }
 
                 if (AlphaChecked)

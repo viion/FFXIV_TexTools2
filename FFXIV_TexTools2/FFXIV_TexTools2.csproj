@@ -153,6 +153,7 @@
     <Compile Include="FileTypes\ModelContainers\JsonSkeleton.cs" />
     <Compile Include="FileTypes\ModelContainers\Skeleton.cs" />
     <Compile Include="Helpers\FlexibleMessageBox.cs" />
+    <Compile Include="IO\ChangeMTRL.cs" />
     <Compile Include="Model\JsonEntry.cs" />
     <Compile Include="Commands\RelayCommand.cs" />
     <Compile Include="Helpers\TexHelper.cs" />
@@ -184,6 +185,11 @@
     <Compile Include="Custom\CustomPhongMaterial.cs" />
     <Compile Include="Custom\CustomRenderTechniquesManager.cs" />
     <Compile Include="Model\VFXData.cs" />
+    <Compile Include="Resources\Dialogs.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Dialogs.resx</DependentUpon>
+    </Compile>
     <Compile Include="ViewModel\BaseViewModel.cs" />
     <Compile Include="ViewModel\CategoryViewModel.cs" />
     <Compile Include="Model\ComboBoxInfo.cs" />
@@ -242,6 +248,9 @@
     <Compile Include="Views\AdvImport.xaml.cs">
       <DependentUpon>AdvImport.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Customize.xaml.cs">
+      <DependentUpon>Customize.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Directories.xaml.cs">
       <DependentUpon>Directories.xaml</DependentUpon>
     </Compile>
@@ -262,6 +271,9 @@
     </Compile>
     <Compile Include="Views\ProblemCheckView.xaml.cs">
       <DependentUpon>ProblemCheckView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ProgressDialog.xaml.cs">
+      <DependentUpon>ProgressDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\TextureView.xaml.cs">
       <DependentUpon>TextureView.xaml</DependentUpon>
@@ -288,6 +300,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\AdvImport.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\Customize.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -319,6 +335,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\ProgressDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\TextureView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -347,6 +367,10 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Dialogs.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Dialogs.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\Strings.fr.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.fr.Designer.cs</LastGenOutput>
@@ -367,11 +391,13 @@
       <LastGenOutput>Strings.en.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Strings.ko.resx" />
     <EmbeddedResource Include="Resources\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Strings.zh.resx" />
     <None Include="app.manifest" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
@@ -410,9 +436,14 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\ImportFile_16x.png" />
+    <Resource Include="Resources\textureDNE.png" />
     <Content Include="sharpdx_direct3d11_1_effects_arm.dll" />
-    <Content Include="sharpdx_direct3d11_1_effects_x64.dll" />
-    <Content Include="sharpdx_direct3d11_1_effects_x86.dll" />
+    <Content Include="sharpdx_direct3d11_1_effects_x64.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sharpdx_direct3d11_1_effects_x86.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="x64\d3dcompiler_47.dll" />
     <Content Include="x86\d3dcompiler_47.dll" />
     <Resource Include="Resources\PaypalDonateButton.png" />

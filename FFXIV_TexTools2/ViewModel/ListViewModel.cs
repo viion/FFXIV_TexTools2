@@ -24,13 +24,15 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Brushes = System.Windows.Media.Brushes;
 
 namespace FFXIV_TexTools2.ViewModel
 {
@@ -72,6 +74,11 @@ namespace FFXIV_TexTools2.ViewModel
             ModListModel mlm = new ModListModel();
             string race, map, part, type;
 
+            if (entry.fullPath.Contains("mt_"))
+            {
+                Debug.WriteLine(entry.fullPath);
+            }
+
             if (entry.fullPath.Contains("weapon") || entry.fullPath.Contains("accessory") || entry.fullPath.Contains("decal") || entry.fullPath.Contains("vfx") || entry.fullPath.Contains("ui/"))
             {
                 race = Strings.All;
@@ -83,8 +90,11 @@ namespace FFXIV_TexTools2.ViewModel
             else
             {
                 race = entry.fullPath.Substring(entry.fullPath.LastIndexOf('/'));
-
-                if ((entry.fullPath.Contains("_fac_") || entry.fullPath.Contains("_etc_") || entry.fullPath.Contains("_acc_")) && Properties.Settings.Default.DX_Ver.Equals(Strings.DX11))
+                if(entry.fullPath.Contains("mt_") && entry.fullPath.Contains("_acc_"))
+                {
+                    race = race.Substring(race.IndexOf("_") + 2, 4);
+                }
+                else if ((entry.fullPath.Contains("_fac_") || entry.fullPath.Contains("_etc_") || entry.fullPath.Contains("_acc_")) && Properties.Settings.Default.DX_Ver.Equals(Strings.DX11))
                 {
                     race = race.Substring(race.LastIndexOf("--c") + 3, 4);
                 }
@@ -108,6 +118,12 @@ namespace FFXIV_TexTools2.ViewModel
                         race = race.Substring(race.LastIndexOf('c') + 1, 4);
                     }
                 }
+
+                if (entry.fullPath.Contains("mt_"))
+                {
+                    Debug.WriteLine(race + "\n");
+                }
+
                 race = Info.IDRace[race];
             }
 
@@ -206,9 +222,11 @@ namespace FFXIV_TexTools2.ViewModel
             {
                 var info = MTRL.GetMTRLInfo(entry.modOffset, false);
 
-                var bitmap = TEX.TextureToBitmap(info.ColorData, 9312, 4, 16);
+                var bitmap = TEX.ColorSetToBitmap(info.ColorData);
 
                 mlm.BMP = Imaging.CreateBitmapSourceFromHBitmap(bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                mlm.BMP.Freeze();
+                bitmap.Dispose();
             }
             else if (entry.fullPath.Contains("model"))
             {
@@ -234,7 +252,27 @@ namespace FFXIV_TexTools2.ViewModel
                     }
                 }
 
-                mlm.BMP = Imaging.CreateBitmapSourceFromHBitmap(texData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                var scale = 1;
+
+                if (texData.Width >= 4096 || texData.Height >= 4096)
+                {
+                    scale = 16;
+                }
+                else if (texData.Width >= 2048 || texData.Height >= 2048)
+                {
+                    scale = 8;
+                }
+                else if (texData.Width >= 1024 || texData.Height >= 1024)
+                {
+                    scale = 4;
+                }
+
+                var nWidth = texData.Width / scale;
+                var nHeight = texData.Height / scale;
+
+                var resizedImage = TexHelper.CreateResizedImage(texData.BMPSouceNoAlpha, nWidth, nHeight);
+                mlm.BMP = (BitmapSource)resizedImage;
+                mlm.BMP.Freeze();
             }
 
             var offset = Helper.GetDataOffset(FFCRC.GetHash(entry.fullPath.Substring(0, entry.fullPath.LastIndexOf("/"))), FFCRC.GetHash(Path.GetFileName(entry.fullPath)), entry.datFile);

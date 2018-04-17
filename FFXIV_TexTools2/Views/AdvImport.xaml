@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FFXIV_TexTools2.Views"
         mc:Ignorable="d"
-        Title="3D Import Options" Height="250" Width="600" WindowStyle="ToolWindow">
+        Title="3D Import Options" Width="600" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" Height="300">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -49,11 +49,11 @@
 
                 </Grid>
             </Border>
-
             <Grid Grid.Row="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
@@ -62,21 +62,35 @@
                 </Grid.ColumnDefinitions>
                 <CheckBox x:Name="FixCheckbox" Grid.Row="0" Content="Attempt Fix" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Checked="FixCheckbox_Checked" Unchecked="FixCheckbox_Unchecked"/>
                 <CheckBox x:Name="DisableCheckbox" Grid.Row="1" Content="Disable Hiding" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Checked="DisableCheckbox_Checked" Unchecked="DisableCheckbox_Unchecked"/>
-                <TextBlock Grid.Column="1" TextWrapping="Wrap" Text="Use this option if mesh appears to have holes, when another item is equipped. 
+                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                    <Label Content="Part: " VerticalAlignment="Center"/>
+                    <ComboBox x:Name="PartComboBox" IsReadOnly="True" HorizontalAlignment="Left" VerticalAlignment="Center" SelectionChanged="PartComboBox_SelectionChanged"  />
+                </StackPanel>
+                
+                <TextBlock x:Name="AttemptFixText" Grid.Column="1" TextWrapping="Wrap" Text="Use this option if mesh appears to have holes, when another item is equipped. 
                            *It is recommended to try this option before disabling." VerticalAlignment="Center" Padding="0" Margin="20,0,10,0"/>
-                <TextBlock Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" Text="Use this option to disable the mesh from hiding when another item is equipped." VerticalAlignment="Center" Margin="20,0,10,0"/>
-                <Grid Grid.Column="2" Grid.Row="2" Margin="300,0,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="CreateXMLButton" Grid.Column="0" Content="Make XML" Margin="5" Click="CreateXMLButton_Click" />
-                    <Button x:Name="CancelButton" Grid.Column="1" Content="Cancel" Margin="5" Click="CancelButton_Click" />
-                    <Button x:Name="ImportButton" Grid.Column="2" Content="Import" Margin="5" Click="ImportButton_Click" />
+                <TextBlock x:Name="DisableHidingText" Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" Text="Use this option to disable the mesh from hiding when another item is equipped." VerticalAlignment="Center" Margin="20,0,10,0"/>
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                    <Label Content="Attribute(s):" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="OrigAttrText" Text="[ Attribute ]" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="200"/>
+                    <Label Content="| Add/Remove: " VerticalAlignment="Center" Margin="15,0,0,0"/>
+                    <ComboBox x:Name="NewAttrComobBox" IsReadOnly="True" HorizontalAlignment="Left" VerticalAlignment="Center" SelectionChanged="NewAttrComobBox_SelectionChanged"/>
+                </StackPanel>
+                <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal">
+                    <Label Content="*Note: These options are still in development and may not work properly." VerticalAlignment="Bottom" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="CreateXMLButton" Grid.Column="0" Content="Make XML" Margin="5" Click="CreateXMLButton_Click" />
+                        <Button x:Name="CancelButton" Grid.Column="1" Content="Cancel" Margin="5" Click="CancelButton_Click" />
+                        <Button x:Name="ImportButton" Grid.Column="2" Content="Import" Margin="5" Click="ImportButton_Click" />
+                    </Grid>
+                </StackPanel>
 
-                </Grid>
-                <Label Grid.ColumnSpan="2" Content="*Note: These options are still in development and may not work properly." Grid.Row="2" VerticalAlignment="Bottom" Margin="0,0,150,0" />
+
             </Grid>
         </Grid>
 

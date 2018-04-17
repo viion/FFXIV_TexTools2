@@ -119,6 +119,11 @@ namespace FFXIV_TexTools2.Material
 
                 ObservableCollection<ComboBoxInfo> cbiInfo = new ObservableCollection<ComboBoxInfo>();
 
+                if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                {
+                    IMCVersion = "0001";
+                }
+
                 var fileHashList = Helper.GetAllFilesInFolder(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat);
 
                 if (type.Equals("weapon") || type.Equals("food"))
@@ -190,6 +195,8 @@ namespace FFXIV_TexTools2.Material
             {
                 for (int i = 1; i < 251; i++)
                 {
+                    if (raceID.Equals(Info.raceID[Strings.Miqote + " " + Strings.Female]) &&
+                        (i == 104 || i == 109)) continue;
                     MTRLFolder = String.Format(Strings.HairMtrlFolder, raceID, i.ToString().PadLeft(4, '0'));
 
                     MTRLDict.Add(FFCRC.GetHash(MTRLFolder), i);
@@ -266,12 +273,36 @@ namespace FFXIV_TexTools2.Material
 
                 if (item.PrimaryMTRLFolder.Contains("demihuman"))
                 {
-                    cbiList.Add(new ComboBoxInfo() { Name = "a", ID = "a", IsNum = false });
+                    SortedSet<ComboBoxInfo> typeSet = new SortedSet<ComboBoxInfo>();
+
+                    if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                    {
+                        IMCVersion = "0001";
+                    }
+
+                    fileHashList = Helper.GetAllFilesInFolder(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat);
+
+                    foreach (string abr in Info.slotAbr.Values)
+                    {
+                        var MTRLFile = String.Format(Strings.DemiMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), abr, "a");
+
+                        if (fileHashList.Contains(FFCRC.GetHash(MTRLFile)))
+                        {
+                            typeSet.Add(new ComboBoxInfo() { Name = Info.slotAbr.FirstOrDefault(x => x.Value == abr).Key, ID = "", IsNum = false });
+
+                        }
+                    }
+
+                    cbiList.AddRange(typeSet);
                 }
                 else
                 {
-                    Dictionary<string, int> mountMTRLDict = new Dictionary<string, int>();
                     string[] parts = { "a", "b", "c", "d", "e" };
+
+                    if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                    {
+                        IMCVersion = "0001";
+                    }
 
                     fileHashList = Helper.GetAllFilesInFolder(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat);
 
@@ -288,9 +319,13 @@ namespace FFXIV_TexTools2.Material
             }
             else if (selectedCategory.Equals(Strings.Minions))
             {
-                Dictionary<string, int> minionMTRLDict = new Dictionary<string, int>();
                 string[] parts = { "a", "b", "c", "d", "e" };
                 cbiList = new List<ComboBoxInfo>();
+
+                if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                {
+                    IMCVersion = "0001";
+                }
 
                 fileHashList = Helper.GetAllFilesInFolder(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat);
 
@@ -309,6 +344,11 @@ namespace FFXIV_TexTools2.Material
                 string type = Helper.GetCategoryType(selectedCategory);
                 string[] parts = { "a", "b", "c", "d", "e" };
                 cbiList = new List<ComboBoxInfo>();
+
+                if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                {
+                    IMCVersion = "0001";
+                }
 
                 fileHashList = Helper.GetAllFilesInFolder(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat);
 
@@ -544,16 +584,22 @@ namespace FFXIV_TexTools2.Material
                 {
                     SortedSet<ComboBoxInfo> typeSet = new SortedSet<ComboBoxInfo>();
 
+                    if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                    {
+                        IMCVersion = "0001";
+                    }
+
                     var fileHashList = Helper.GetAllFilesInFolder(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat);
 
-                    foreach (string abr in Info.slotAbr.Values)
+                    string[] parts = { "a", "b", "c", "d", "e" };
+
+                    foreach (string p in parts)
                     {
-                        MTRLFile = String.Format(Strings.DemiMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), abr);
+                        MTRLFile = String.Format(Strings.DemiMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), Info.slotAbr[part], p);
 
                         if (fileHashList.Contains(FFCRC.GetHash(MTRLFile)))
                         {
-                            typeSet.Add(new ComboBoxInfo() { Name = Info.slotAbr.FirstOrDefault(x => x.Value == abr).Key, ID = "", IsNum = false });
-                            
+                            typeSet.Add(new ComboBoxInfo() { Name = p, ID = "", IsNum = false });
                         }
                     }
                     info = new Tuple<MTRLData, ObservableCollection<ComboBoxInfo>>(mtrlInfo, new ObservableCollection<ComboBoxInfo>(typeSet.ToList()));
@@ -561,6 +607,11 @@ namespace FFXIV_TexTools2.Material
                 else
                 {
                     MTRLFile = String.Format(Strings.MonsterMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), part);
+
+                    if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                    {
+                        IMCVersion = "0001";
+                    }
 
                     if (Helper.FileExists(FFCRC.GetHash(MTRLFile), FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
                     {
@@ -580,6 +631,11 @@ namespace FFXIV_TexTools2.Material
             else if (selectedCategory.Equals(Strings.Minions))
             {
                 MTRLFile = String.Format(Strings.MonsterMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), part);
+
+                if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                {
+                    IMCVersion = "0001";
+                }
 
                 if (Helper.FileExists(FFCRC.GetHash(MTRLFile), FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
                 {
@@ -651,6 +707,11 @@ namespace FFXIV_TexTools2.Material
                 if (item.PrimaryModelID.Equals("9982"))
                 {
                     MTRLFile = "guide_model.mtrl";
+                }
+
+                if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + imcVersion), Strings.ItemsDat))
+                {
+                    imcVersion = "0001";
                 }
 
                 if (Helper.FileExists(FFCRC.GetHash(MTRLFile), FFCRC.GetHash(MTRLFolder + imcVersion), Strings.ItemsDat))
@@ -834,14 +895,20 @@ namespace FFXIV_TexTools2.Material
 
                 if (item.PrimaryMTRLFolder.Contains("demihuman"))
                 {
-                    MTRLFile = String.Format(Strings.DemiMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), type);
+                    MTRLFile = String.Format(Strings.DemiMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), type, part);
                 }
                 else
                 {
                     MTRLFile = String.Format(Strings.MonsterMtrlFile, item.PrimaryModelID.PadLeft(4, '0'), item.PrimaryModelBody.PadLeft(4, '0'), partNum);
                 }
 
+
                 MTRLPath = item.PrimaryMTRLFolder + IMCVersion + "/" + MTRLFile;
+
+                if (!Helper.FolderExists(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), Strings.ItemsDat))
+                {
+                    IMCVersion = "0001";
+                };
 
                 offset = Helper.GetDataOffset(FFCRC.GetHash(item.PrimaryMTRLFolder + IMCVersion), FFCRC.GetHash(MTRLFile), Strings.ItemsDat);
             }
@@ -892,7 +959,7 @@ namespace FFXIV_TexTools2.Material
         /// <returns>Data from MTRL file</returns>
         public static MTRLData GetMTRLInfo(int offset, bool isUncompressed)
         {
-            int datNum = ((offset / 8) & 0x000f) / 2;
+            int datNum = ((offset / 8) & 0xF) / 2;
 
             MTRLData mtrlInfo = new MTRLData();
 
@@ -915,8 +982,17 @@ namespace FFXIV_TexTools2.Material
 
                 for(int i = 0; i < numOfTextures + 1; i++)
                 {
-                    texPathOffsets[i] = br.ReadInt16();
-                    br.ReadBytes(2);
+                    var tpo = br.ReadInt16();
+                    if (i != 0 && tpo == 0)
+                    {
+                        br.ReadBytes(2);
+                        i--;
+                    }
+                    else
+                    {
+                        texPathOffsets[i] = tpo;
+                        br.ReadBytes(2);
+                    }
                 }
 
                 br.ReadBytes((numOfMaps - 1) * 4);
@@ -953,7 +1029,8 @@ namespace FFXIV_TexTools2.Material
                     //    fileName = fileName.Replace("1301", "0101").Replace("met", "model");
                     //}
 
-                    if (fileName.Contains("_s.tex"))
+
+                    if (fileName.Contains("_s.tex") || fileName.Contains("skin"))
                     {
                         mtrlInfo.SpecularPath = fullPath.Substring(0, fullPath.LastIndexOf("/")) + "/" + fileName;
                         mtrlInfo.TextureMaps.Add(new ComboBoxInfo() { Name = mapName, ID = "", IsNum = false });
@@ -994,6 +1071,11 @@ namespace FFXIV_TexTools2.Material
                         mtrlInfo.ColorData = br.ReadBytes(colorDataSize);
                     }
                 }
+
+                br.ReadBytes(8);
+
+               mtrlInfo.ShaderNum = br.ReadByte();
+
             }
 
             return mtrlInfo;
@@ -1216,10 +1298,11 @@ namespace FFXIV_TexTools2.Material
         /// </summary>
         /// <param name="offset">The offset of the MTRL file</param>
         /// <returns>Bitmap from the colorset</returns>
-        public static Tuple<Bitmap, byte[]> GetColorBitmap(int offset)
+        public static Tuple<Bitmap, byte[], int> GetColorBitmap(int offset)
         {
             int datNum = ((offset / 8) & 0x000f) / 2;
             byte[] colorData = null;
+            int shaderNum = 0;
 
             using (BinaryReader br = new BinaryReader(new MemoryStream(Helper.GetType2DecompressedData(offset, datNum, Strings.ItemsDat))))
             {
@@ -1239,11 +1322,15 @@ namespace FFXIV_TexTools2.Material
                     if (colorDataSize == 544)
                     {
                         colorData = br.ReadBytes(colorDataSize - 32);
+                        br.ReadBytes(32);
                     }
                     else
                     {
                         colorData = br.ReadBytes(colorDataSize);
                     }
+
+                    br.ReadBytes(8);
+                    shaderNum = br.ReadByte();
                 }
                 else
                 {
@@ -1251,7 +1338,7 @@ namespace FFXIV_TexTools2.Material
                 }
             }
 
-            return new Tuple<Bitmap, byte[]>(TEX.TextureToBitmap(colorData, 9312, 4, 16), colorData);
+            return new Tuple<Bitmap, byte[], int>(TEX.ColorSetToBitmap(colorData), colorData, shaderNum);
         }
 
         /// <summary>

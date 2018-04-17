@@ -20,6 +20,7 @@ using FFXIV_TexTools2.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -35,15 +36,22 @@ namespace FFXIV_TexTools2.IO
 
         public static Dictionary<string, List<TreeNode>> GetEXDData()
         {
-            Dictionary<string, List<TreeNode>> exdDict = new Dictionary<string, List<TreeNode>>
-            {
-                { Strings.Gear, MakeItemsList() },
-                { Strings.Character, MakeCharacterList() },
-                { Strings.Companions, MakeCompanionsList() },
-                { "UI", MakeUIList() }
-            };
+            var itemList = MakeItemsList();
 
-            return exdDict;
+            if (itemList != null)
+            {
+                Dictionary<string, List<TreeNode>> exdDict = new Dictionary<string, List<TreeNode>>
+                {
+                    { Strings.Gear, itemList },
+                    { Strings.Character, MakeCharacterList() },
+                    { Strings.Companions, MakeCompanionsList() },
+                    { "UI", MakeUIList() }
+                };
+
+                return exdDict;
+            }
+
+            return null;
         }
 
         private static List<TreeNode> MakeCharacterList()
@@ -84,7 +92,19 @@ namespace FFXIV_TexTools2.IO
             List<string> petNames = new List<string>();
 
             var petFile = String.Format(Strings.PetEXD, Strings.Language);
-            var petBytes = Helper.GetDecompressedEXDData(Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(petFile)), petFile);
+            byte[] petBytes;
+            try
+            {
+                petBytes =
+                    Helper.GetDecompressedEXDData(
+                        Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(petFile)), petFile);
+            }
+            catch (Exception e)
+            {
+                FlexibleMessageBox.Show("Error reading Pets EXD \nYou may have an older or unsupported version of the game.\n\n"
+                                        + e.Message, "EXDReader (MakePetsList) Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
 
             using (BinaryReader br = new BinaryReader(new MemoryStream(petBytes)))
             {
@@ -117,11 +137,25 @@ namespace FFXIV_TexTools2.IO
                         if (!petNames.Contains(petName))
                         {
                             petNames.Add(petName);
+                            string petID = "";
+
+                            if (Properties.Settings.Default.Language.Equals("ko"))
+                            {
+                                petID = Info.petIDKO[petName];
+                            }
+                            else if (Properties.Settings.Default.Language.Equals("zh"))
+                            {
+                                petID = Info.petIDCHS[petName];
+                            }
+                            else
+                            {
+                                petID = Info.petID[petName];
+                            }
 
                             ItemData item = new ItemData()
                             {
                                 ItemName = petName,
-                                PrimaryModelID = Info.petID[petName],
+                                PrimaryModelID = petID,
                                 PrimaryModelBody = "1",
                                 PrimaryModelVariant = "1",
                                 ItemCategory = "22"
@@ -146,7 +180,7 @@ namespace FFXIV_TexTools2.IO
                                     ItemData item2 = new ItemData()
                                     {
                                         ItemName = petName + " " + j,
-                                        PrimaryModelID = Info.petID[petName],
+                                        PrimaryModelID = petID,
                                         PrimaryModelBody = "1",
                                         PrimaryModelVariant = j.ToString(),
                                         ItemCategory = "22"
@@ -227,8 +261,19 @@ namespace FFXIV_TexTools2.IO
         {
             string minionFile = String.Format(Strings.MinionFile, Strings.Language);
 
-            byte[] minionsBytes = Helper.GetDecompressedEXDData(Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(minionFile)), minionFile);
-            byte[] modelChara = Helper.GetDecompressedEXDData(Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(Strings.ModelCharaFile)), Strings.ModelCharaFile);
+            byte[] minionsBytes;
+            byte[] modelChara;
+            try
+            {
+                minionsBytes = Helper.GetDecompressedEXDData(Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(minionFile)), minionFile);
+                modelChara = Helper.GetDecompressedEXDData(Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(Strings.ModelCharaFile)), Strings.ModelCharaFile);
+            }
+            catch (Exception e)
+            {
+                FlexibleMessageBox.Show("Error reading Minions EXD \nYou may have an older or unsupported version of the game.\n\n"
+                                        + e.Message, "EXDReader (MakeMinionsList) Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
 
             TreeNode minionNode = new TreeNode() { Name = Strings.Minions};
 
@@ -451,7 +496,7 @@ namespace FFXIV_TexTools2.IO
 
         public static TreeNode MakeHUDList()
         {
-            var uldList = Properties.Resources.uldpaths.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+            var uldList = Properties.Resources.uldpaths.Split(new string[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
 
             var uldFolder = "ui/uld/";
 
@@ -778,7 +823,14 @@ namespace FFXIV_TexTools2.IO
                             var subcat = br.ReadByte();
                             if (subcat != 0)
                             {
-                                item.ItemSubCategory = ActionCategoryDict[subcat];
+                                try
+                                {
+                                    item.ItemSubCategory = ActionCategoryDict[subcat];
+                                }
+                                catch
+                                {
+                                    item.ItemSubCategory = ActionCategoryDict[0];
+                                }
                             }
                             else
                             {
@@ -1445,7 +1497,18 @@ namespace FFXIV_TexTools2.IO
         {
             string itemUICatFile = String.Format(Strings.ItemUICategory, Strings.Language);
 
-            byte[] itemUICatBytes = Helper.GetDecompressedEXDData(Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(itemUICatFile)), itemUICatFile);
+            byte[] itemUICatBytes;
+            try
+            {
+                itemUICatBytes = Helper.GetDecompressedEXDData(
+                    Helper.GetEXDOffset(FFCRC.GetHash(Strings.ExdFolder), FFCRC.GetHash(itemUICatFile)), itemUICatFile);
+            }
+            catch (Exception e)
+            {
+                FlexibleMessageBox.Show("Error reading ItemUICategory EXD \nYou may have an older or unsupported version of the game.\n\n"
+                                        + e.Message, "EXDReader (ItemUICategory) Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
 
             Dictionary<int, string> UICategories = new Dictionary<int, string>();
 
@@ -1510,6 +1573,7 @@ namespace FFXIV_TexTools2.IO
 
             Dictionary<int, string> actionCategories = new Dictionary<int, string>();
 
+            actionCategories.Add(0, "None");
             using (BinaryReader br = new BinaryReader(new MemoryStream(actionCatBytes)))
             {
                 br.ReadBytes(8);
@@ -1549,6 +1613,41 @@ namespace FFXIV_TexTools2.IO
             Dictionary<int, string> itemOffsetDict = new Dictionary<int, string>();
             Dictionary<string, TreeNode> itemDict = new Dictionary<string, TreeNode>();
             Dictionary<string, TreeNode> itemIconDict = new Dictionary<string, TreeNode>();
+
+            string testItemExd = String.Format(Strings.itemFile, 0, Strings.Language);
+
+            if (!Helper.FileExists(FFCRC.GetHash(testItemExd), FFCRC.GetHash(Strings.ExdFolder), Strings.EXDDat))
+            {
+                if (Info.otherClientSupport)
+                {
+                    testItemExd = String.Format(Strings.itemFile, 0, "ko");
+                    Properties.Settings.Default.Language = "ko";
+                    Properties.Settings.Default.Save();
+
+                    if (!Helper.FileExists(FFCRC.GetHash(testItemExd), FFCRC.GetHash(Strings.ExdFolder), Strings.EXDDat))
+                    {
+                        testItemExd = String.Format(Strings.itemFile, 0, "chs");
+                        Properties.Settings.Default.Language = "zh";
+                        Properties.Settings.Default.Save();
+
+                        if (!Helper.FileExists(FFCRC.GetHash(testItemExd), FFCRC.GetHash(Strings.ExdFolder), Strings.EXDDat))
+                        {
+                            return null;
+                        }
+                    }
+
+                    CultureInfo ci = new CultureInfo(Properties.Settings.Default.Language);
+                    ci.NumberFormat.NumberDecimalSeparator = ".";
+                    CultureInfo.DefaultThreadCurrentCulture = ci;
+                    CultureInfo.DefaultThreadCurrentUICulture = ci;
+                }
+                else
+                {
+                    FlexibleMessageBox.Show(Dialogs.ClientSupportWarning, "Client Support OFF " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return null;
+                }
+
+            }
 
             var UICategoryDict = ItemUICategory();
 

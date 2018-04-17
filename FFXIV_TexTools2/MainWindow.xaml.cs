@@ -41,13 +41,7 @@ namespace FFXIV_TexTools2
         MainViewModel mViewModel;
         CategoryViewModel selectedItem;
 
-        List<string> baseRace = new List<string>
-        {
-            {Strings.Hyur_M },
-            {Strings.Hyur_H },
-            {Strings.AuRa_Raen },
-            {Strings.AuRa_Xaela }
-        };
+
 
         public MainWindow()
         {
@@ -65,35 +59,6 @@ namespace FFXIV_TexTools2
 
             DXVerButton.Content = "DX Version: " + dxver.Substring(2);
 
-            List<System.Windows.Controls.MenuItem> miList = new List<System.Windows.Controls.MenuItem>();
-            foreach(var br in baseRace)
-            {
-                System.Windows.Controls.MenuItem mi = new System.Windows.Controls.MenuItem();
-                mi.Header = br;
-                miList.Add(mi);
-            }
-
-            Default_Race.ItemsSource = miList;
-
-            if (Properties.Settings.Default.Default_Race.Equals(""))
-            {
-                Properties.Settings.Default.Default_Race = Strings.Hyur_M;
-                Properties.Settings.Default.Save();
-            }
-
-            foreach(System.Windows.Controls.MenuItem br in Default_Race.Items)
-            {
-                if (br.Header.Equals(Properties.Settings.Default.Default_Race))
-                {
-                    br.IsChecked = true;
-                    br.IsEnabled = false;
-                }
-                else
-                {
-                    br.IsChecked = false;
-                }
-            }
-
 
             //HavokInterop.InitializeSTA();
         }
@@ -101,6 +66,7 @@ namespace FFXIV_TexTools2
         private void Menu_ProblemCheck_Click(object sender, RoutedEventArgs e)
         {
             ProblemCheckView pcv = new ProblemCheckView();
+            pcv.Owner = this;
             pcv.Show();
         }
 
@@ -185,12 +151,14 @@ namespace FFXIV_TexTools2
         private void Menu_ModList_Click(object sender, RoutedEventArgs e)
         {
             ModList ml = new ModList();
+            ml.Owner = this;
             ml.Show();
         }
 
         private void Menu_Directories_Click(object sender, RoutedEventArgs e)
         {
             DirectoriesView dv = new DirectoriesView();
+            dv.Owner = this;
             dv.Show();
         }
 
@@ -358,11 +326,31 @@ namespace FFXIV_TexTools2
 
                     foreach (var datName in Info.ModDatDict)
                     {
-                        var datPath = string.Format(Info.datDir, datName.Key, datName.Value);
+                        var datNum = 0;
 
-                        if (File.Exists(datPath))
+                        if (datName.Key.Equals(Strings.ItemsDat))
                         {
-                            File.Delete(datPath);
+                            for (int i = 4; i < 10; i++)
+                            {
+                                var datPath = string.Format(Info.datDir, datName.Key, i);
+
+                                if (File.Exists(datPath))
+                                {
+                                    File.Delete(datPath);
+                                }
+                            }
+                        }
+                        else if (datName.Key.Equals(Strings.UIDat))
+                        {
+                            for (int i = 1; i < 5; i++)
+                            {
+                                var datPath = string.Format(Info.datDir, datName.Key, i);
+
+                                if (File.Exists(datPath))
+                                {
+                                    File.Delete(datPath);
+                                }
+                            }
                         }
                     }
 
@@ -460,36 +448,12 @@ namespace FFXIV_TexTools2
 
         private void Menu_Discord_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start("http://discord.gg/dVSMA8y");
+            System.Diagnostics.Process.Start("https://goo.gl/E1rUxP");
         }
 
         private void Menu_Tutorials_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start("http://ffxivtextools.dualwield.net/app_tutorial.html");
-        }
-
-        private void Default_Race_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedMenuItem = (e.OriginalSource as System.Windows.Controls.MenuItem);
-            var selectedRace = selectedMenuItem.Header.ToString();
-
-
-            Properties.Settings.Default.Default_Race = selectedRace;
-            Properties.Settings.Default.Save();
-
-            foreach (System.Windows.Controls.MenuItem br in Default_Race.Items)
-            {
-                if (br.Header.Equals(Properties.Settings.Default.Default_Race))
-                {
-                    br.IsChecked = true;
-                    br.IsEnabled = false;
-                }
-                else
-                {
-                    br.IsChecked = false;
-                    br.IsEnabled = true;
-                }
-            }
+            System.Diagnostics.Process.Start("https://textools.dualwield.net/tutorials/");
         }
 
         private void DXVerButton_Click(object sender, RoutedEventArgs e)
@@ -540,8 +504,6 @@ namespace FFXIV_TexTools2
                     item.IsSelected = true;
                     actionSelectedItemChanged(item);
 
-                    logoutput.Items.Add("- Item: " + item.Name.ToString() + " -- "+ mViewModel.getMvm().getModelName());
-
                     SaveModel.Save(
                         mViewModel.getMvm().getModelName(),
                         mViewModel.getMvm().getSelectedMeshId(),
@@ -549,7 +511,7 @@ namespace FFXIV_TexTools2
                         mViewModel.getMvm().getMeshList()
                     );
 
-                    break;
+                    logoutput.Items.Add("- Saved: " + item.Name.ToString() + " -- " + mViewModel.getMvm().getModelName());
                 }
 
                 break;
@@ -571,12 +533,13 @@ namespace FFXIV_TexTools2
         private void Menu_MakeModpack_Click(object sender, RoutedEventArgs e)
         {
             MakeModPack mmp = new MakeModPack();
+            mmp.Owner = this;
             mmp.Show();
         }
 
         private void Menu_ImportModpack_Click(object sender, RoutedEventArgs e)
         {
-            string mpDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\TexTools\\ModPacks";
+            string mpDir = Properties.Settings.Default.ModPack_Directory;
 
             if (!Directory.Exists(mpDir))
             {
@@ -590,10 +553,16 @@ namespace FFXIV_TexTools2
             if(ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 ImportModPack imp = new ImportModPack(ofd.FileName);
+                imp.Owner = this;
                 imp.Show();
             }
+        }
 
-
+        private void Menu_Customize_Click(object sender, RoutedEventArgs e)
+        {
+            Customize customize = new Customize();
+            customize.Owner = this;
+            customize.Show();
         }
     }
 }

@@ -23,7 +23,6 @@ using HelixToolkit.Wpf.SharpDX.Core;
 using SharpDX;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -43,6 +42,7 @@ namespace FFXIV_TexTools2.Material
         List<string> objBytes = new List<string>();
         List<string> materialStrings = new List<string>();
         List<string> boneStrings = new List<string>();
+        List<string> atrStrings = new List<string>();
         List<float> boneTransforms = new List<float>();
         ExtraIndexData extraIndexData = new ExtraIndexData();
         ModelData modelData = new ModelData();
@@ -192,10 +192,16 @@ namespace FFXIV_TexTools2.Material
 
                     for(int i= 0; i < attributeStringCount; i++)
                     {
-                        while(br1.ReadByte() != 0)
+                        byte a;
+                        List<byte> atrName = new List<byte>();
+                        while ((a = br1.ReadByte()) != 0)
                         {
-                            //extract each atribute string here
+                            atrName.Add(a);
                         }
+                        string atr = Encoding.ASCII.GetString(atrName.ToArray());
+                        atr = atr.Replace("\0", "");
+
+                        atrStrings.Add(atr);
                     }
 
                     for(int i = 0; i < boneStringCount; i++)
@@ -974,6 +980,7 @@ namespace FFXIV_TexTools2.Material
                         VertexColors = colorsList,
                         OBJFileData = objBytes.ToArray(),
                         BoneStrings = boneStrings,
+                        AttributeStrings = atrStrings,
                         BoneIndices = modelData.BoneIndicies,
                         BoneTransforms = boneTransforms,
                         BlendWeights = blendWeightList,
@@ -1009,10 +1016,13 @@ namespace FFXIV_TexTools2.Material
                                 }
                                 else
                                 {
-                                    new Thread(() => MessageBox.Show("There was an error reading the models extra data.\n\n" +
-                                        "Mesh " + i + " Index " + id + "\n\n" +
-                                        "This is likely caused by parts of a mesh being deleted and may cause crashes in-game.\n\n" +
-                                        "Consider using Advanced Import to Fix or Disable Hiding for the above mesh.", "Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error)).Start();
+                                    //new Thread(() => MessageBox.Show("There was an error reading the models extra data.\n\n" +
+                                    //    "Mesh " + i + " Index " + id + "\n\n" +
+                                    //    "This is likely caused by parts of a mesh being deleted and may cause crashes in-game.\n\n" +
+                                    //    "Consider using Advanced Import to Fix or Disable Hiding for the above mesh.",
+                                    //    "Extra Data Warning" + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Warning)).Start();
+                                    new Thread(() => MessageBox.Show(string.Format(Dialogs.MDLExtraDataWarning, i, id),
+                                        Dialogs.ExtraDataWarning + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Warning)).Start();
 
                                     break;
                                 }

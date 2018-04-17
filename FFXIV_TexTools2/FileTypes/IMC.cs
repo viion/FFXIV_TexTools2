@@ -37,7 +37,7 @@ namespace FFXIV_TexTools2.Material
         /// <param name="item">The selected items data</param>
         /// <param name="isSecondary">Use secondary item data</param>
         /// <returns>The version of the selected item</returns>
-        public static Tuple<string, string> GetVersion(string selectedCategory, ItemData item, bool isSecondary)
+        public static Tuple<string, string> GetVersion(string selectedCategory, ItemData item, bool isSecondary, bool isDemiHuman)
         {
             if(int.Parse(item.ItemCategory) < 22 || selectedCategory.Equals(Strings.Pets) || selectedCategory.Equals(Strings.Mounts) 
                 || selectedCategory.Equals(Strings.Minions) || selectedCategory.Equals(Strings.Monster) || selectedCategory.Equals(Strings.DemiHuman))
@@ -45,6 +45,11 @@ namespace FFXIV_TexTools2.Material
                 var slotID = Info.slotID[selectedCategory];
                 var type = Helper.GetCategoryType(selectedCategory);
                 string itemID, body, variant;
+
+                if (isDemiHuman)
+                {
+                    type = "monster";
+                }
 
                 if (isSecondary)
                 {
@@ -62,7 +67,15 @@ namespace FFXIV_TexTools2.Material
                 int offset = 0;
                 if (type.Equals("monster"))
                 {
-                    offset = Helper.GetDataOffset(FFCRC.GetHash(string.Format(Strings.MonsterIMCFolder, itemID, body)), FFCRC.GetHash(string.Format(Strings.MonsterIMCFile, body)), Strings.ItemsDat);
+                    if (isDemiHuman)
+                    {
+                        offset = Helper.GetDataOffset(FFCRC.GetHash(string.Format(Strings.DemiIMCFolder, itemID, body)), FFCRC.GetHash(string.Format(Strings.DemiIMCFile, body)), Strings.ItemsDat);
+                        type = "demihuman";
+                    }
+                    else
+                    {
+                        offset = Helper.GetDataOffset(FFCRC.GetHash(string.Format(Strings.MonsterIMCFolder, itemID, body)), FFCRC.GetHash(string.Format(Strings.MonsterIMCFile, body)), Strings.ItemsDat);
+                    }
                 }
                 else if (type.Equals("food") || type.Equals("weapon"))
                 {
@@ -131,10 +144,6 @@ namespace FFXIV_TexTools2.Material
                 vfxVersion = vfx.ToString().PadLeft(4, '0');
 
                 if (version <= 0)
-                {
-                    itemVersion = "0001";
-                }
-                else if (version > 100)
                 {
                     itemVersion = "0001";
                 }

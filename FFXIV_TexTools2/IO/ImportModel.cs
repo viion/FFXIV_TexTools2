@@ -46,7 +46,6 @@ namespace FFXIV_TexTools2.IO
 		/// This is calculated by multiplying the dat file number by 16 bytes [.dat4]: (4 * 16 = 64)
 		/// This amount is added to the offset when reading and subtracted from the offset when writing
 		/// </remarks>
-		public static int DatOffsetAmount = 64;
 
 		static Dictionary<int, int> nVertDict = new Dictionary<int, int>();
 		static Dictionary<string, ImportSettings> importSettings = new Dictionary<string, ImportSettings>();
@@ -194,8 +193,20 @@ namespace FFXIV_TexTools2.IO
 											{
 												var name = reader["name"];
 
-												boneJointDict.Add(sid, name);
-											}
+											    try
+											    {
+											        boneJointDict.Add(sid, name);
+											    }
+											    catch (Exception e)
+											    {
+											        FlexibleMessageBox.Show("Duplicate bone found.\n" +
+											                                "Bone: " + sid + "\n\n" +
+											                                "Delete the duplicate bone and try again.\n\n" +
+											                                "Error: " + e.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    return;
+											    }
+
+                                            }
 										}
 									}
 								}
@@ -275,9 +286,21 @@ namespace FFXIV_TexTools2.IO
 									var atr = reader["name"];
 									var id = reader["id"];
 
-									meshNameDict.Add(id, atr);
+								    try
+								    {
+								        meshNameDict.Add(id, atr);
+								    }
+								    catch (Exception e)
+								    {
+								        FlexibleMessageBox.Show("Duplicate mesh found.\n" +
+								                                "Mesh: " + id + "\n\n" +
+								                                "Full Name: " + atr + "\n\n" +
+                                                                "Delete or Rename the duplicate mesh and try again.\n\n" +
+								                                "Error: " + e.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+								        return;
+								    }
 
-									var meshNum = int.Parse(atr.Substring(atr.LastIndexOf("_") + 1, 1));
+                                    var meshNum = int.Parse(atr.Substring(atr.LastIndexOf("_") + 1, 1));
 
 									if (atr.Contains("."))
 									{
@@ -363,12 +386,36 @@ namespace FFXIV_TexTools2.IO
 									if (atr.Contains("."))
 									{
 										var num = atr.Substring(atr.LastIndexOf(".") + 1);
-										pDict[meshNum].Add(int.Parse(num), cData);
+									    try
+									    {
+									        pDict[meshNum].Add(int.Parse(num), cData);
+									    }
+									    catch (Exception e)
+									    {
+									        FlexibleMessageBox.Show("Duplicate mesh part found.\n" +
+									                                "Mesh: " + meshNum + "\tPart: " + num + "\n" +
+                                                                    "Full Name: " + atr + "\n\n" +
+									                                "Delete or Rename the duplicate mesh part and try again.\n\n" +
+									                                "Error: " + e.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        }
 									}
 									else
 									{
-										pDict[meshNum].Add(0, cData);
-									}
+									    try
+									    {
+									        pDict[meshNum].Add(0, cData);
+
+									    }
+									    catch (Exception e)
+									    {
+									        FlexibleMessageBox.Show("Duplicate mesh part found.\n" +
+									                                "Mesh: " + meshNum + "\tPart: 0" + "\n" +
+									                                "Full Name: " + atr + "\n\n" +
+                                                                    "Delete or Rename the duplicate mesh part and try again.\n\n" +
+									                                "Error: " + e.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        }
+
+                                    }
 								}
 								//go to controller element
 								else if (reader.Name.Equals("controller"))
@@ -444,9 +491,21 @@ namespace FFXIV_TexTools2.IO
 												{
 													var blend = tempbIndex[a];
 													var blendName = cData.bones[blend];
-													var blendBoneName = boneJointDict[blendName];
+												    string blendBoneName;
 
-													var bString = blendBoneName;
+												    try
+												    {
+												        blendBoneName = boneJointDict[blendName];
+												    }
+												    catch (Exception e)
+												    {
+                                                        FlexibleMessageBox.Show("Error reading bone data.\n\nBone: " + blendName +
+                                                                                "\n\n" + e.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+												        return;
+												    }
+
+
+                                                    var bString = blendBoneName;
 													if (!blendBoneName.Contains("h0"))
 													{
 														bString = Regex.Replace(blendBoneName, @"[\d]", string.Empty);
@@ -461,8 +520,18 @@ namespace FFXIV_TexTools2.IO
 													}
 													else
 													{
-														cData.bIndex.Add(boneDict[bString]);
-														cData.bIndex.Add(tempbIndex[a + 1]);
+													    try
+													    {
+													        cData.bIndex.Add(boneDict[bString]);
+													    }
+													    catch (Exception e)
+													    {
+													        FlexibleMessageBox.Show("Error reading bone data.\n\nBone: " + bString +
+													                                "\n\n" + e.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+													        return;
+                                                        }
+
+                                                        cData.bIndex.Add(tempbIndex[a + 1]);
 													}
 												}
 
@@ -501,8 +570,6 @@ namespace FFXIV_TexTools2.IO
 					return;
 				}
 
-				bool passfail = false;
-
 				for(int i = 0; i < pDict.Count; i++)
 				{
 					var mDict = pDict[i];
@@ -536,11 +603,6 @@ namespace FFXIV_TexTools2.IO
 					}
 				}
 
-				if (passfail)
-				{
-					return;
-				}
-
 				for (int i = 0; i < pDict.Count; i++)
 				{
 					var mDict = pDict[i];
@@ -559,82 +621,93 @@ namespace FFXIV_TexTools2.IO
 					{
 						for (int j = 0; j < mDict.Count; j++)
 						{
-							while (!mDict.ContainsKey(c))
-							{
-								cdDict[i].partsDict.Add(c, 0);
-								c++;
-							}
+						    try
+						    {
+						        while (!mDict.ContainsKey(c))
+						        {
+						            cdDict[i].partsDict.Add(c, 0);
+						            c++;
+						        }
 
-							if(mDict[c].texCoord2.Count < 1 && indStride == 6)
-							{
-								indStride = 4;
-							}
+						        if (mDict[c].texCoord2.Count < 1 && indStride == 6)
+						        {
+						            indStride = 4;
+						        }
 
-							cdDict[i].vertex.AddRange(mDict[c].vertex);
-							cdDict[i].normal.AddRange(mDict[c].normal);
-							cdDict[i].texCoord.AddRange(mDict[c].texCoord);
-							cdDict[i].texCoord2.AddRange(mDict[c].texCoord2);
-							cdDict[i].tangent.AddRange(mDict[c].tangent);
-							cdDict[i].biNormal.AddRange(mDict[c].biNormal);
+						        cdDict[i].vertex.AddRange(mDict[c].vertex);
+						        cdDict[i].normal.AddRange(mDict[c].normal);
+						        cdDict[i].texCoord.AddRange(mDict[c].texCoord);
+						        cdDict[i].texCoord2.AddRange(mDict[c].texCoord2);
+						        cdDict[i].tangent.AddRange(mDict[c].tangent);
+						        cdDict[i].biNormal.AddRange(mDict[c].biNormal);
 
-							for(int k = 0; k < mDict[c].vIndexList.Count; k++)
-							{
-								cdDict[i].index.Add(mDict[c].vIndexList[k] + vMax);
-								cdDict[i].index.Add(mDict[c].nIndexList[k] + nMax);
-								cdDict[i].index.Add(mDict[c].tcIndexList[k] + tcMax);
+						        for (int k = 0; k < mDict[c].vIndexList.Count; k++)
+						        {
+						            cdDict[i].index.Add(mDict[c].vIndexList[k] + vMax);
+						            cdDict[i].index.Add(mDict[c].nIndexList[k] + nMax);
+						            cdDict[i].index.Add(mDict[c].tcIndexList[k] + tcMax);
 
-								if (mDict[c].texCoord2.Count > 0)
-								{
-									cdDict[i].index.Add(mDict[c].tc2IndexList[k] + tc2Max);
-								}
+						            if (mDict[c].texCoord2.Count > 0)
+						            {
+						                cdDict[i].index.Add(mDict[c].tc2IndexList[k] + tc2Max);
+						            }
 
-								if(mDict[c].biNormal.Count > 0)
-								{
-									cdDict[i].index.Add(mDict[c].bnIndexList[k] + bnMax);
-								}
-							}
+						            if (mDict[c].biNormal.Count > 0)
+						            {
+						                cdDict[i].index.Add(mDict[c].bnIndexList[k] + bnMax);
+						            }
+						        }
 
-							vMax += mDict[c].vIndexList.Max() + 1;
-							nMax += mDict[c].nIndexList.Max() + 1;
-							tcMax += mDict[c].tcIndexList.Max() + 1;
+						        vMax += mDict[c].vIndexList.Max() + 1;
+						        nMax += mDict[c].nIndexList.Max() + 1;
+						        tcMax += mDict[c].tcIndexList.Max() + 1;
 
-							if (mDict[c].texCoord2.Count > 0)
-							{
-								tc2Max += mDict[c].tc2IndexList.Max() + 1;
-							}
+						        if (mDict[c].texCoord2.Count > 0)
+						        {
+						            tc2Max += mDict[c].tc2IndexList.Max() + 1;
+						        }
 
-							if(mDict[c].biNormal.Count > 0)
-							{
-								bnMax += mDict[c].bnIndexList.Max() + 1;
-							}
+						        if (mDict[c].biNormal.Count > 0)
+						        {
+						            bnMax += mDict[c].bnIndexList.Max() + 1;
+						        }
 
-							cdDict[i].partsDict.Add(c, mDict[c].index.Count / indStride);
+						        cdDict[i].partsDict.Add(c, mDict[c].index.Count / indStride);
 
-							cdDict[i].weights.AddRange(mDict[c].weights);
-							cdDict[i].vCount.AddRange(mDict[c].vCount);
+						        cdDict[i].weights.AddRange(mDict[c].weights);
+						        cdDict[i].vCount.AddRange(mDict[c].vCount);
 
-							if (j > 0)
-							{
+						        if (j > 0)
+						        {
 
-								lastIndex = bInList.Max() + 1;
+						            lastIndex = bInList.Max() + 1;
 
-								for (int a = 0; a < mDict[c].bIndex.Count; a += 2)
-								{
-									cdDict[i].bIndex.Add(mDict[c].bIndex[a]);
-									cdDict[i].bIndex.Add(mDict[c].bIndex[a + 1] + lastIndex);
-									bInList.Add(mDict[c].bIndex[a + 1] + lastIndex);
-								}
-							}
-							else
-							{
-								for (int a = 0; a < mDict[c].bIndex.Count; a += 2)
-								{
-									cdDict[i].bIndex.Add(mDict[c].bIndex[a]);
-									cdDict[i].bIndex.Add(mDict[c].bIndex[a + 1]);
-									bInList.Add(mDict[c].bIndex[a + 1]);
-								}
-							}
-							c++;
+						            for (int a = 0; a < mDict[c].bIndex.Count; a += 2)
+						            {
+						                cdDict[i].bIndex.Add(mDict[c].bIndex[a]);
+						                cdDict[i].bIndex.Add(mDict[c].bIndex[a + 1] + lastIndex);
+						                bInList.Add(mDict[c].bIndex[a + 1] + lastIndex);
+						            }
+						        }
+						        else
+						        {
+						            for (int a = 0; a < mDict[c].bIndex.Count; a += 2)
+						            {
+						                cdDict[i].bIndex.Add(mDict[c].bIndex[a]);
+						                cdDict[i].bIndex.Add(mDict[c].bIndex[a + 1]);
+						                bInList.Add(mDict[c].bIndex[a + 1]);
+						            }
+						        }
+
+						        c++;
+						    }
+						    catch (Exception e)
+						    {
+						        FlexibleMessageBox.Show("There was an error reading data imported data at:" +
+						                                "\n\nMesh: " + i + " Part: " + c + "\n\n" + e.Message, "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return;
+						    }
+
 						}
 					}
 					else
@@ -825,80 +898,99 @@ namespace FFXIV_TexTools2.IO
 
 						for (int i = 0; i < Vertex.Count; i++)
 						{
-							int bCount = cd.vCount[i];
+						    try
+						    {
+						        int bCount = cd.vCount[i];
 
-							int boneSum = 0;
+						        int boneSum = 0;
 
-							List<byte> biList = new List<byte>();
-							List<byte> bwList = new List<byte>();
+						        List<byte> biList = new List<byte>();
+						        List<byte> bwList = new List<byte>();
 
-							int newbCount = 0;
-							for (int j = 0; j < bCount * 2; j += 2)
-							{
-								var b = cd.bIndex[vTrack * 2 + j];
-								var bi = (byte)blDict[b];
-								var bw = (byte)Math.Round(cd.weights[cd.bIndex[vTrack * 2 + j + 1]] * 255f);
+						        int newbCount = 0;
+						        for (int j = 0; j < bCount * 2; j += 2)
+						        {
+						            var b = cd.bIndex[vTrack * 2 + j];
+                                    try
+						            {
+						                var bi = (byte) blDict[b];
+						                var bw = (byte) Math.Round(cd.weights[cd.bIndex[vTrack * 2 + j + 1]] * 255f);
 
-								if (bw != 0)
-								{
-									biList.Add(bi);
-									bwList.Add(bw);
-									boneSum += bw;
-									newbCount++;
-								}
+						                if (bw != 0)
+						                {
+						                    biList.Add(bi);
+						                    bwList.Add(bw);
+						                    boneSum += bw;
+						                    newbCount++;
+						                }
+						            }
+						            catch (Exception ex)
+						            {
+						                FlexibleMessageBox.Show("There was an error reading imported bone data at:" +
+						                                        "\n\nVertex: " + i + " Bone: " + b + "\n\n" + ex.Message, "Bone Read Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        return;
+                                    }
+						        }
 
-							}
-							int originalbCount = bCount;
-							bCount = newbCount;
+						        int originalbCount = bCount;
+						        bCount = newbCount;
 
-							if (bCount < 4)
-							{
-								int remainder = 4 - bCount;
+						        if (bCount < 4)
+						        {
+						            int remainder = 4 - bCount;
 
-								for (int k = 0; k < remainder; k++)
-								{
-									biList.Add(0);
-									bwList.Add(0);
-								}
-							}
-							else if (bCount > 4)
-							{
-								int extras = bCount - 4;
+						            for (int k = 0; k < remainder; k++)
+						            {
+						                biList.Add(0);
+						                bwList.Add(0);
+						            }
+						        }
+						        else if (bCount > 4)
+						        {
+						            int extras = bCount - 4;
 
-								for (int k = 0; k < extras; k++)
-								{
-									var min = bwList.Min();
-									var minIndex = bwList.IndexOf(min);
-									int count = (bwList.Count(x => x == min));
-									bwList.Remove(min);
-									biList.RemoveAt(minIndex);
-									boneSum -= min;
-								}
-							}
+						            for (int k = 0; k < extras; k++)
+						            {
+						                var min = bwList.Min();
+						                var minIndex = bwList.IndexOf(min);
+						                int count = (bwList.Count(x => x == min));
+						                bwList.Remove(min);
+						                biList.RemoveAt(minIndex);
+						                boneSum -= min;
+						            }
+						        }
 
-							if (boneSum != 255)
-							{
-								int diff = boneSum - 255;
-								var max = bwList.Max();
-								var maxIndex = bwList.IndexOf(max);
-								errorDict.Add(i, diff);
-								if (diff < 0)
-								{
-									bwList[maxIndex] += (byte)Math.Abs(diff);
-								}
-								else
-								{
-									// Subtract difference when over-weight.
-									bwList[maxIndex] -= (byte)Math.Abs(diff);
-								}
-							}
+						        if (boneSum != 255)
+						        {
+						            int diff = boneSum - 255;
+						            var max = bwList.Max();
+						            var maxIndex = bwList.IndexOf(max);
+						            errorDict.Add(i, diff);
+						            if (diff < 0)
+						            {
+						                bwList[maxIndex] += (byte) Math.Abs(diff);
+						            }
+						            else
+						            {
+						                // Subtract difference when over-weight.
+						                bwList[maxIndex] -= (byte) Math.Abs(diff);
+						            }
+						        }
 
-							boneSum = 0;
-							bwList.ForEach(x => boneSum += x);
+						        boneSum = 0;
+						        bwList.ForEach(x => boneSum += x);
 
-							blendIndices.Add(biList.ToArray());
-							blendWeights.Add(bwList.ToArray());
-							vTrack += originalbCount;
+						        blendIndices.Add(biList.ToArray());
+						        blendWeights.Add(bwList.ToArray());
+						        vTrack += originalbCount;
+						    }
+						    catch (Exception e)
+						    {
+						        FlexibleMessageBox.Show("There was an error reading imported bone data at:" +
+						                                "\n\nVertex: " + i + "\n\n" + e.Message, "Bone Read Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return;
+						    }
+
 						}
 					}
 
@@ -947,52 +1039,62 @@ namespace FFXIV_TexTools2.IO
 
 					for (int i = 0; i < iList.Count; i++)
 					{
-						if (!indexDict.ContainsKey(iList[i][0]))
-						{
-							if (!blender)
-							{
-								indexDict.Add(iList[i][0], inCount);
-								nVertex.Add(Vertex[iList[i][0]]);
-								nBlendIndices.Add(blendIndices[iList[i][0]]);
-								nBlendWeights.Add(blendWeights[iList[i][0]]);
-								nNormals.Add(Normals[iList[i][1]]);
-								nTexCoord.Add(TexCoord[iList[i][2]]);
-								if (TexCoord2.Count > 0 && TexCoord2.Count >= indexMax)
-								{
-									nTexCoord2.Add(TexCoord2[iList[i][3]]);
-								}
+					    try
+					    {
+					        if (!indexDict.ContainsKey(iList[i][0]))
+					        {
+					            if (!blender)
+					            {
+					                indexDict.Add(iList[i][0], inCount);
+					                nVertex.Add(Vertex[iList[i][0]]);
+					                nBlendIndices.Add(blendIndices[iList[i][0]]);
+					                nBlendWeights.Add(blendWeights[iList[i][0]]);
+					                nNormals.Add(Normals[iList[i][1]]);
+					                nTexCoord.Add(TexCoord[iList[i][2]]);
+					                if (TexCoord2.Count > 0 && TexCoord2.Count >= indexMax)
+					                {
+					                    nTexCoord2.Add(TexCoord2[iList[i][3]]);
+					                }
 
-								if (nTangents.Count > 0 && TexCoord2.Count > 0)
-								{
-									nTangents.Add(Tangents[iList[i][4]]);
-									nBiNormals.Add(BiNormals[iList[i][4]]);
-								}
-								else if(nTangents.Count > 0 && TexCoord2.Count < 1)
-								{
-									nTangents.Add(Tangents[iList[i][3]]);
-									nBiNormals.Add(BiNormals[iList[i][3]]);
-								}
-							}
-							else
-							{
-								indexDict.Add(iList[i][0], inCount);
-								nVertex.Add(Vertex[iList[i][0]]);
-								nBlendIndices.Add(blendIndices[iList[i][0]]);
-								nBlendWeights.Add(blendWeights[iList[i][0]]);
-								nNormals.Add(Normals[iList[i][0]]);
-								nTexCoord.Add(TexCoord[iList[i][0]]);
-								nTexCoord2.Add(TexCoord2[iList[i][0]]);
+					                if (nTangents.Count > 0 && TexCoord2.Count > 0)
+					                {
+					                    nTangents.Add(Tangents[iList[i][4]]);
+					                    nBiNormals.Add(BiNormals[iList[i][4]]);
+					                }
+					                else if (nTangents.Count > 0 && TexCoord2.Count < 1)
+					                {
+					                    nTangents.Add(Tangents[iList[i][3]]);
+					                    nBiNormals.Add(BiNormals[iList[i][3]]);
+					                }
+					            }
+					            else
+					            {
+					                indexDict.Add(iList[i][0], inCount);
+					                nVertex.Add(Vertex[iList[i][0]]);
+					                nBlendIndices.Add(blendIndices[iList[i][0]]);
+					                nBlendWeights.Add(blendWeights[iList[i][0]]);
+					                nNormals.Add(Normals[iList[i][0]]);
+					                nTexCoord.Add(TexCoord[iList[i][0]]);
+					                nTexCoord2.Add(TexCoord2[iList[i][0]]);
 
-								if (nTangents.Count > 0)
-								{
-									nTangents.Add(Tangents[iList[i][0]]);
-									nBiNormals.Add(BiNormals[iList[i][0]]);
-								}
-							}
+					                if (nTangents.Count > 0)
+					                {
+					                    nTangents.Add(Tangents[iList[i][0]]);
+					                    nBiNormals.Add(BiNormals[iList[i][0]]);
+					                }
+					            }
 
 
-							inCount++;
-						}
+					            inCount++;
+					        }
+					    }
+					    catch (Exception e)
+					    {
+					        FlexibleMessageBox.Show("There was an error reindexing the data at:" +
+					                                "\n\nIndex: " + i + "\n\n" + e.Message, "Reindexing Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					        return;
+                        }
+
 					}
 
 					HashSet<int> nVertList = new HashSet<int>();
@@ -1001,8 +1103,17 @@ namespace FFXIV_TexTools2.IO
 
 					for (int i = 0; i < iList.Count; i++)
 					{
-						var nIndex = indexDict[iList[i][0]];
-						Indices.Add(nIndex);
+					    try
+					    {
+					        var nIndex = indexDict[iList[i][0]];
+					        Indices.Add(nIndex);
+					    }
+					    catch (Exception e)
+					    {
+					        FlexibleMessageBox.Show("There was an error finding the index data for:" +
+					                                "\n\nIndex: " + i + "\n\n" + e.Message, "Index Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					        return;
+                        }
 					}
 
 					if (importSettings != null && importSettings.ContainsKey(m.ToString()))
@@ -1955,12 +2066,28 @@ namespace FFXIV_TexTools2.IO
 								}
 							}
 
-							//Attributes (int)
-							mp.Attributes = br.ReadInt32();
-							modelDataBlock.AddRange(BitConverter.GetBytes(mp.Attributes));
+						    //Attributes (int)
+                            mp.Attributes = br.ReadInt32();
 
-							//Bone reference offset (short)
-							mp.BoneOffset = br.ReadInt16();
+                            if (importSettings != null && importSettings.ContainsKey(i.ToString()) && l == 0)
+                            {
+                                if (importSettings[i.ToString()].PartDictionary != null)
+                                {
+                                    var attr = importSettings[i.ToString()].PartDictionary[j];
+                                    modelDataBlock.AddRange(BitConverter.GetBytes(attr));
+                                }
+                                else
+                                {
+                                    modelDataBlock.AddRange(BitConverter.GetBytes(mp.Attributes));
+                                }
+                            }
+                            else
+						    {
+						        modelDataBlock.AddRange(BitConverter.GetBytes(mp.Attributes));
+                            }
+
+                            //Bone reference offset (short)
+                            mp.BoneOffset = br.ReadInt16();
 							modelDataBlock.AddRange(BitConverter.GetBytes((short)mp.BoneOffset));
 
 							//Bone reference count (short)
@@ -2857,155 +2984,191 @@ namespace FFXIV_TexTools2.IO
 				}
 			}
 
-			var modDatPath = string.Format(Info.datDir, Strings.ItemsDat, Info.ModDatDict[Strings.ItemsDat]);
+		    var datNum = int.Parse(Info.ModDatDict[Strings.ItemsDat]);
+		    var modDatPath = string.Format(Info.datDir, Strings.ItemsDat, datNum);
 
-			try
+            if (inModList)
+		    {
+		        datNum = ((modEntry.modOffset / 8) & 0x0F) / 2;
+		        modDatPath = string.Format(Info.datDir, modEntry.datFile, datNum);
+		    }
+		    else
+		    {
+		        var fileLength = new FileInfo(modDatPath).Length;
+		        while (fileLength >= 2000000000)
+		        {
+		            datNum += 1;
+		            modDatPath = string.Format(Info.datDir, Strings.ItemsDat, datNum);
+		            if (!File.Exists(modDatPath))
+		            {
+		                CreateDat.MakeNewDat(Strings.ItemsDat);
+		            }
+		            fileLength = new FileInfo(modDatPath).Length;
+		        }
+            }
+
+            try
 			{
-				using (BinaryWriter bw = new BinaryWriter(File.OpenWrite(modDatPath)))
-				{
-					/* 
-					 * If the item has been previously modified and the compressed data being imported is smaller or equal to the exisiting data
-					*  replace the existing data with new data.
-					*/
-					if (inModList && data.Count <= modEntry.modSize)
-					{
-						if(modEntry.modOffset != 0)
-						{
-							int sizeDiff = modEntry.modSize - data.Count;
+                /* 
+                * If the item has been previously modified and the compressed data being imported is smaller or equal to the exisiting data
+                * replace the existing data with new data.
+                */
+                if (inModList && data.Count <= modEntry.modSize)
+                {
+                    if (modEntry.modOffset != 0)
+                    {
+                        datNum = ((modEntry.modOffset / 8) & 0x0F) / 2;
+                        modDatPath = string.Format(Info.datDir, modEntry.datFile, datNum);
+                        var datOffsetAmount = datNum * 16;
 
-							bw.BaseStream.Seek(modEntry.modOffset - DatOffsetAmount, SeekOrigin.Begin);
+                        using (BinaryWriter bw = new BinaryWriter(File.OpenWrite(modDatPath)))
+                        {
+                            int sizeDiff = modEntry.modSize - data.Count;
 
-							bw.Write(data.ToArray());
+                            bw.BaseStream.Seek(modEntry.modOffset - datOffsetAmount, SeekOrigin.Begin);
 
-							bw.Write(new byte[sizeDiff]);
+                            bw.Write(data.ToArray());
 
-							Helper.UpdateIndex(modEntry.modOffset, internalFilePath, Strings.ItemsDat);
-							Helper.UpdateIndex2(modEntry.modOffset, internalFilePath, Strings.ItemsDat);
+                            bw.Write(new byte[sizeDiff]);
 
-							offset = modEntry.modOffset;
+                            Helper.UpdateIndex(modEntry.modOffset, internalFilePath, Strings.ItemsDat);
+                            Helper.UpdateIndex2(modEntry.modOffset, internalFilePath, Strings.ItemsDat);
 
-							dataOverwritten = true;
-						}
-					}
-					else
-					{
-						int emptyLength = 0;
-						int emptyLine = 0;
+                            offset = modEntry.modOffset;
 
-						/* 
-						 * If there is an empty entry in the modlist and the compressed data being imported is smaller or equal to the available space
-						*  write the compressed data in the existing space.
-						*/
+                            dataOverwritten = true;
+                        }
+                    }
+                }
+                else
+                {
+                    int emptyLength = 0;
+                    int emptyLine = 0;
 
-						try
-						{
-							foreach (string line in File.ReadAllLines(Properties.Settings.Default.Modlist_Directory))
-							{
-								JsonEntry emptyEntry = JsonConvert.DeserializeObject<JsonEntry>(line);
+                    /* 
+                     * If there is an empty entry in the modlist and the compressed data being imported is smaller or equal to the available space
+                    *  write the compressed data in the existing space.
+                    */
 
-								if (emptyEntry.fullPath.Equals("") && emptyEntry.datFile.Equals(Strings.ItemsDat))
-								{
-									if(emptyEntry.modOffset != 0)
-									{
-										emptyLength = emptyEntry.modSize;
+                    try
+                    {
+                        foreach (string line in File.ReadAllLines(Properties.Settings.Default.Modlist_Directory))
+                        {
+                            JsonEntry emptyEntry = JsonConvert.DeserializeObject<JsonEntry>(line);
 
-										if (emptyLength > data.Count)
-										{
-											int sizeDiff = emptyLength - data.Count;
+                            if (emptyEntry.fullPath.Equals("") && emptyEntry.datFile.Equals(Strings.ItemsDat))
+                            {
+                                if (emptyEntry.modOffset != 0)
+                                {
+                                    emptyLength = emptyEntry.modSize;
 
-											bw.BaseStream.Seek(emptyEntry.modOffset - DatOffsetAmount, SeekOrigin.Begin);
+                                    if (emptyLength > data.Count)
+                                    {
+                                        int sizeDiff = emptyLength - data.Count;
 
-											bw.Write(data.ToArray());
+                                        datNum = ((emptyEntry.modOffset / 8) & 0x0F) / 2;
+                                        modDatPath = string.Format(Info.datDir, emptyEntry.datFile, datNum);
+                                        var datOffsetAmount = datNum * 16;
 
-											bw.Write(new byte[sizeDiff]);
+                                        using (BinaryWriter bw = new BinaryWriter(File.OpenWrite(modDatPath)))
+                                        {
+                                            bw.BaseStream.Seek(emptyEntry.modOffset - datOffsetAmount, SeekOrigin.Begin);
 
-											int originalOffset = Helper.UpdateIndex(emptyEntry.modOffset, internalFilePath, Strings.ItemsDat) * 8;
-											Helper.UpdateIndex2(emptyEntry.modOffset, internalFilePath, Strings.ItemsDat);
+                                            bw.Write(data.ToArray());
 
-											if (inModList)
-											{
-												originalOffset = modEntry.originalOffset;
+                                            bw.Write(new byte[sizeDiff]);
+                                        }
 
-												JsonEntry replaceOriginalEntry = new JsonEntry()
-												{
-													category = String.Empty,
-													name = String.Empty,
-													fullPath = String.Empty,
-													originalOffset = 0,
-													modOffset = modEntry.modOffset,
-													modSize = modEntry.modSize,
-													datFile = Strings.ItemsDat
-												};
+                                        int originalOffset = Helper.UpdateIndex(emptyEntry.modOffset, internalFilePath, Strings.ItemsDat) * 8;
+                                        Helper.UpdateIndex2(emptyEntry.modOffset, internalFilePath, Strings.ItemsDat);
 
-												string[] oLines = File.ReadAllLines(Properties.Settings.Default.Modlist_Directory);
-												oLines[lineNum] = JsonConvert.SerializeObject(replaceOriginalEntry);
-												File.WriteAllLines(Properties.Settings.Default.Modlist_Directory, oLines);
-											}
+                                        if (inModList)
+                                        {
+                                            originalOffset = modEntry.originalOffset;
 
-											JsonEntry replaceEntry = new JsonEntry()
-											{
-												category = category,
-												name = itemName,
-												fullPath = internalFilePath,
-												originalOffset = originalOffset,
-												modOffset = emptyEntry.modOffset,
-												modSize = emptyEntry.modSize,
-												datFile = Strings.ItemsDat
-											};
+                                            JsonEntry replaceOriginalEntry = new JsonEntry()
+                                            {
+                                                category = String.Empty,
+                                                name = String.Empty,
+                                                fullPath = String.Empty,
+                                                originalOffset = 0,
+                                                modOffset = modEntry.modOffset,
+                                                modSize = modEntry.modSize,
+                                                datFile = Strings.ItemsDat
+                                            };
 
-											string[] lines = File.ReadAllLines(Properties.Settings.Default.Modlist_Directory);
-											lines[emptyLine] = JsonConvert.SerializeObject(replaceEntry);
-											File.WriteAllLines(Properties.Settings.Default.Modlist_Directory, lines);
+                                            string[] oLines = File.ReadAllLines(Properties.Settings.Default.Modlist_Directory);
+                                            oLines[lineNum] = JsonConvert.SerializeObject(replaceOriginalEntry);
+                                            File.WriteAllLines(Properties.Settings.Default.Modlist_Directory, oLines);
+                                        }
 
-											offset = emptyEntry.modOffset;
+                                        JsonEntry replaceEntry = new JsonEntry()
+                                        {
+                                            category = category,
+                                            name = itemName,
+                                            fullPath = internalFilePath,
+                                            originalOffset = originalOffset,
+                                            modOffset = emptyEntry.modOffset,
+                                            modSize = emptyEntry.modSize,
+                                            datFile = Strings.ItemsDat
+                                        };
 
-											dataOverwritten = true;
-											break;
-										}
-									}
-								}
-								emptyLine++;
-							}
-						}
-						catch (Exception ex)
-						{
-							FlexibleMessageBox.Show("Error Accessing .modlist File \n" + ex.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
-						}
+                                        string[] lines = File.ReadAllLines(Properties.Settings.Default.Modlist_Directory);
+                                        lines[emptyLine] = JsonConvert.SerializeObject(replaceEntry);
+                                        File.WriteAllLines(Properties.Settings.Default.Modlist_Directory, lines);
+
+                                        offset = emptyEntry.modOffset;
+
+                                        dataOverwritten = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            emptyLine++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        FlexibleMessageBox.Show("Error Accessing .modlist File \n" + ex.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
 
 
-						if (!dataOverwritten)
-						{
-							bw.BaseStream.Seek(0, SeekOrigin.End);
+                    if (!dataOverwritten)
+                    {
+                        using (BinaryWriter bw = new BinaryWriter(File.OpenWrite(modDatPath)))
+                        {
+                            bw.BaseStream.Seek(0, SeekOrigin.End);
 
-							while ((bw.BaseStream.Position & 0xFF) != 0)
-							{
-								bw.Write((byte)0);
-							}
+                            while ((bw.BaseStream.Position & 0xFF) != 0)
+                            {
+                                bw.Write((byte)0);
+                            }
 
-							int eof = (int)bw.BaseStream.Position + data.Count;
+                            int eof = (int)bw.BaseStream.Position + data.Count;
 
-							while ((eof & 0xFF) != 0)
-							{
-								data.AddRange(new byte[16]);
-								eof = eof + 16;
-							}
+                            while ((eof & 0xFF) != 0)
+                            {
+                                data.AddRange(new byte[16]);
+                                eof = eof + 16;
+                            }
 
-							offset = (int)bw.BaseStream.Position + DatOffsetAmount;
+                            var datOffsetAmount = datNum * 16;
+                            offset = (int)bw.BaseStream.Position + datOffsetAmount;
 
-							if(offset != 0)
-							{
-								bw.Write(data.ToArray());
-							}
-							else
-							{
-								FlexibleMessageBox.Show("There was an issue obtaining the .dat4 offset to write data to, try importing again. " +
-												"\n\n If the problem persists, please submit a bug report.", "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
-								return 0;
-							}
-						}
-					}
-				}
-			}
+                            if (offset != 0)
+                            {
+                                bw.Write(data.ToArray());
+                            }
+                            else
+                            {
+                                FlexibleMessageBox.Show("There was an issue obtaining the .dat4 offset to write data to, try importing again. " +
+                                                        "\n\n If the problem persists, please submit a bug report.", "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return 0;
+                            }
+                        }
+                    }
+                }
+            }
 			catch (Exception ex)
 			{
 				FlexibleMessageBox.Show("Error Accessing .dat4 File \n" + ex.Message, "ImportModel Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);

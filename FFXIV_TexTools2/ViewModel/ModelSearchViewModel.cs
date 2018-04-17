@@ -31,7 +31,7 @@ namespace FFXIV_TexTools2.ViewModel
         SearchItems selectedItem;
         ObservableCollection<SearchItems> resultList = new ObservableCollection<SearchItems>();
         int typeIndex, progressValue;
-        bool openEnabled;
+        bool openEnabled, searchEnabled = true;
 
         MainViewModel parentVM;
 
@@ -45,6 +45,7 @@ namespace FFXIV_TexTools2.ViewModel
         public int ProgressValue { get { return progressValue; } set { progressValue = value; NotifyPropertyChanged("ProgressValue"); } }
         public ObservableCollection<SearchItems> ResultList { get { return resultList; } set { resultList = value; NotifyPropertyChanged("ResultList"); } }
         public bool OpenEnabled { get { return openEnabled; } set { openEnabled = value; NotifyPropertyChanged("OpenEnabled"); } }
+        public bool SearchEnabled { get { return searchEnabled; } set { searchEnabled = value; NotifyPropertyChanged("SearchEnabled"); } }
 
         Dictionary<string, string> equipSlotDict = new Dictionary<string, string>()
         {
@@ -203,6 +204,11 @@ namespace FFXIV_TexTools2.ViewModel
 
                 MTRLFile = string.Format(file, SelectedItem.RaceID, searchText.PadLeft(4, '0'), SelectedItem.SlotAbr, SelectedItem.Part);
             }
+            else if (SelectedType.Name.Equals("DemiHuman"))
+            {
+                MTRLFolder = string.Format(folder, searchText.PadLeft(4, '0'), SelectedItem.Body.PadLeft(4, '0')) + SelectedItem.Variant.PadLeft(4, '0');
+                MTRLFile = string.Format(file, searchText.PadLeft(4, '0'), SelectedItem.Body.PadLeft(4, '0'), SelectedItem.Part, "a");
+            }
             else
             {
                 MTRLFolder = string.Format(folder, searchText.PadLeft(4, '0'), SelectedItem.Body.PadLeft(4, '0')) + SelectedItem.Variant.PadLeft(4, '0');
@@ -217,6 +223,7 @@ namespace FFXIV_TexTools2.ViewModel
         public void ModelSearch(object obj)
         {
             resultList.Clear();
+            SearchEnabled = false;
             if(searchText != null && searchText.Length > 0)
             {
                 BackgroundWorker bw = new BackgroundWorker();
@@ -238,6 +245,7 @@ namespace FFXIV_TexTools2.ViewModel
             var list = e.Result as List<SearchItems>;
 
             ResultList = new ObservableCollection<SearchItems>(list);
+            SearchEnabled = true;
         }
 
         private void Bw_DoWork(object sender, DoWorkEventArgs e)
@@ -308,7 +316,7 @@ namespace FFXIV_TexTools2.ViewModel
                             {
                                 foreach (var p in parts)
                                 {
-                                    var aFile = string.Format(file, searchText.PadLeft(4, '0'), s, p);
+                                    var aFile = string.Format(file, "0101", searchText.PadLeft(4, '0'), s, p);
 
                                     var fileHash = FFCRC.GetHash(aFile);
                                     if (files.Contains(fileHash))
@@ -487,7 +495,7 @@ namespace FFXIV_TexTools2.ViewModel
 
                             foreach (var eq in eqSlots)
                             {
-                                var wmFile = string.Format(file, searchText.PadLeft(4, '0'), bodyList[i].ToString().PadLeft(4, '0'), eq);
+                                var wmFile = string.Format(file, searchText.PadLeft(4, '0'), bodyList[i].ToString().PadLeft(4, '0'), eq, "a");
 
                                 var fileHash = FFCRC.GetHash(wmFile);
                                 if (files.Contains(fileHash))

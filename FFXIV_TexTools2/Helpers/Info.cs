@@ -36,6 +36,8 @@ namespace FFXIV_TexTools2.Helpers
 
         public static string modDatDir = Properties.Settings.Default.FFXIV_Directory + "/{0}.win32.dat{1}";
 
+        public static bool otherClientSupport = false;
+
         public static Dictionary<string, string> ModDatDict = new Dictionary<string, string>
         {
             {Strings.ItemsDat, "4" },
@@ -208,6 +210,38 @@ namespace FFXIV_TexTools2.Helpers
             {Strings.Placeholder_Egi, "7103" }
         };
 
+        public static Dictionary<string, string> petIDKO = new Dictionary<string, string>
+        {
+            {"요정 에오스", "7001"},
+            {"요정 셀레네", "7001"},
+            {"카벙클", "7002"},
+            {"이프리트 에기", "7003"},
+            {"타이탄 에기", "7004"},
+            {"가루다 에기", "7005"},
+            {Strings.Ramuh_Egi, "7006"},
+            {"자동포탑 룩", "7101"},
+            {"자동포탑 비숍", "7101"},
+            {Strings.Sephirot_Egi, "7007" },
+            {Strings.Bahamut_Egi, "7102" },
+            {Strings.Placeholder_Egi, "7103" }
+        };
+
+        public static Dictionary<string, string> petIDCHS = new Dictionary<string, string>
+        {
+            {"朝日小仙女", "7001"},
+            {"夕月小仙女", "7001"},
+            {"石兽", "7002"},
+            {"伊弗利特之灵", "7003"},
+            {"泰坦之灵", "7004"},
+            {"迦楼罗之灵", "7005"},
+            {Strings.Ramuh_Egi, "7006"},
+            {"车式浮空炮塔", "7101"},
+            {"象式浮空炮塔", "7101"},
+            {Strings.Sephirot_Egi, "7007" },
+            {Strings.Bahamut_Egi, "7102" },
+            {Strings.Placeholder_Egi, "7103" }
+        };
+
         public static Dictionary<string, string> FaceTypes = new Dictionary<string, string>
         {
             {Strings.Face, "fac"},
@@ -286,6 +320,51 @@ namespace FFXIV_TexTools2.Helpers
             {"26", Strings.Monster },
             {"27", Strings.DemiHuman },
             {"0", Strings.Food }
+        };
+
+        public static Dictionary<string, string> AttributeDict = new Dictionary<string, string>
+        {
+            {"none", "None" },
+            {"atr_arm", "Arm"},
+            {"atr_arrow", "Arrow"},
+            {"atr_attach", "Attachment"},
+            {"atr_hair", "Hair"},
+            {"atr_hig", "Facial Hair"},
+            {"atr_hij", "Lower Arm"},
+            {"atr_hiz", "Upper Leg"},
+            {"atr_hrn", "Horns"},
+            {"atr_inr", "Neck"},
+            {"atr_kam", "Hair"},
+            {"atr_kao", "Face"},
+            {"atr_kod", "Waist"},
+            {"atr_leg", "Leg"},
+            {"atr_lod", "LoD"},
+            {"atr_lpd", "Feet Pads"},
+            {"atr_mim", "Ear"},
+            {"atr_nek", "Neck"},
+            {"atr_sne", "Lower Leg"},
+            {"atr_sta", "STA"},
+            {"atr_tlh", "Tail Hide"},
+            {"atr_tls", "Tail Show"},
+            {"atr_top", "Top"},
+            {"atr_ude", "Upper Arm"},
+            {"atr_bv", "Body Part "},
+            {"atr_dv", "Leg Part "},
+            {"atr_mv", "Head Part "},
+            {"atr_gv", "Hand Part "},
+            {"atr_sv", "Feet Part "},
+            {"atr_tv", "Top Part "},
+            {"atr_fv", "Face Part "},
+            {"atr_hv", "Hair Part "},
+            {"atr_nv", "Neck Part "},
+            {"atr_parts", "Part "},
+            {"atr_rv", "RV Part "},
+            {"atr_wv", "WV Part "},
+            {"atr_ev", "EV Part "},
+            {"atr_cn_ankle", "CN Ankle"},
+            {"atr_cn_neck", "CN Neck"},
+            {"atr_cn_waist", "CN Waist"},
+            {"atr_cn_wrist", "CN Wrist"}
         };
 
 

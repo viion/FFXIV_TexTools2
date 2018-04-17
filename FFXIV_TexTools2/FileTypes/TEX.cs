@@ -20,10 +20,13 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Bitmap = System.Drawing.Bitmap;
+using Color = System.Drawing.Color;
 
 namespace FFXIV_TexTools2.Material
 {
@@ -42,6 +45,8 @@ namespace FFXIV_TexTools2.Material
             int datNum = ((offset / 8) & 0x0F) / 2;
 
             var datPath = string.Format(Info.datDir, datName, datNum);
+
+            var storeOffset = offset;
 
             offset = Helper.OffsetCorrection(datNum, offset);
            
@@ -168,12 +173,149 @@ namespace FFXIV_TexTools2.Material
                 }
             }
 
-            texData.BMP = TextureToBitmap(decompressedData.ToArray(), texData.Type, texData.Width, texData.Height);
+            TextureToBitmap(decompressedData.ToArray(), texData);
             texData.TypeString = Info.TextureTypes[texData.Type];
-            texData.RawTexData = decompressedData.ToArray();
+            texData.TexOffset = storeOffset;
             texData.TEXDatName = datName;
 
             return texData;
+        }
+
+        public static byte[] TexRawData(TEXData td)
+        {
+            var offset = td.TexOffset;
+            var datName = td.TEXDatName;
+
+            TEXData texData = new TEXData();
+
+            int datNum = ((offset / 8) & 0x0F) / 2;
+
+            var datPath = string.Format(Info.datDir, datName, datNum);
+
+            offset = Helper.OffsetCorrection(datNum, offset);
+
+            List<byte> decompressedData = new List<byte>();
+
+            using (BinaryReader br = new BinaryReader(File.OpenRead(datPath)))
+            {
+                br.BaseStream.Seek(offset, SeekOrigin.Begin);
+
+                int headerLength = br.ReadInt32();
+                int fileType = br.ReadInt32();
+                int uncompressedFileSize = br.ReadInt32();
+                br.ReadBytes(8);
+                texData.MipCount = br.ReadInt32();
+
+                int endOfHeader = offset + headerLength;
+                int mipMapInfoOffset = offset + 24;
+
+                br.BaseStream.Seek(endOfHeader + 4, SeekOrigin.Begin);
+
+                texData.Type = br.ReadInt32();
+                texData.Width = br.ReadInt16();
+                texData.Height = br.ReadInt16();
+
+                for (int i = 0, j = 0; i < texData.MipCount; i++)
+                {
+                    br.BaseStream.Seek(mipMapInfoOffset + j, SeekOrigin.Begin);
+
+                    int offsetFromHeaderEnd = br.ReadInt32();
+                    int mipMapLength = br.ReadInt32();
+                    int mipMapSize = br.ReadInt32();
+                    int mipMapStart = br.ReadInt32();
+                    int mipMapParts = br.ReadInt32();
+
+                    int mipMapPartOffset = endOfHeader + offsetFromHeaderEnd;
+
+                    br.BaseStream.Seek(mipMapPartOffset, SeekOrigin.Begin);
+
+                    br.ReadBytes(8);
+                    int compressedSize = br.ReadInt32();
+                    int uncompressedSize = br.ReadInt32();
+
+                    if (mipMapParts > 1)
+                    {
+                        byte[] compressedData = br.ReadBytes(compressedSize);
+                        byte[] decompressedPartData = new byte[uncompressedSize];
+
+                        using (MemoryStream ms = new MemoryStream(compressedData))
+                        {
+                            using (DeflateStream ds = new DeflateStream(ms, CompressionMode.Decompress))
+                            {
+                                ds.Read(decompressedPartData, 0, uncompressedSize);
+                            }
+                        }
+
+                        decompressedData.AddRange(decompressedPartData);
+
+                        for (int k = 1; k < mipMapParts; k++)
+                        {
+                            byte check = br.ReadByte();
+                            while (check != 0x10)
+                            {
+                                check = br.ReadByte();
+                            }
+
+                            br.ReadBytes(7);
+                            compressedSize = br.ReadInt32();
+                            uncompressedSize = br.ReadInt32();
+
+                            if (compressedSize != 32000)
+                            {
+                                compressedData = br.ReadBytes(compressedSize);
+                                decompressedPartData = new byte[uncompressedSize];
+                                using (MemoryStream ms = new MemoryStream(compressedData))
+                                {
+                                    using (DeflateStream ds = new DeflateStream(ms, CompressionMode.Decompress))
+                                    {
+                                        ds.Read(decompressedPartData, 0, uncompressedSize);
+                                    }
+                                }
+                                decompressedData.AddRange(decompressedPartData);
+                            }
+                            else
+                            {
+                                decompressedPartData = br.ReadBytes(uncompressedSize);
+                                decompressedData.AddRange(decompressedPartData);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (compressedSize != 32000)
+                        {
+                            var compressedData = br.ReadBytes(compressedSize);
+                            var uncompressedData = new byte[uncompressedSize];
+
+                            using (MemoryStream ms = new MemoryStream(compressedData))
+                            {
+                                using (DeflateStream ds = new DeflateStream(ms, CompressionMode.Decompress))
+                                {
+                                    ds.Read(uncompressedData, 0, uncompressedSize);
+                                }
+                            }
+
+                            decompressedData.AddRange(uncompressedData);
+                        }
+                        else
+                        {
+                            var decompressedPartData = br.ReadBytes(uncompressedSize);
+                            decompressedData.AddRange(decompressedPartData);
+                        }
+                    }
+                    j = j + 20;
+                }
+
+                if (decompressedData.Count < uncompressedFileSize)
+                {
+                    int difference = uncompressedFileSize - decompressedData.Count;
+                    byte[] padding = new byte[difference];
+                    Array.Clear(padding, 0, difference);
+                    decompressedData.AddRange(padding);
+                }
+            }
+
+            return decompressedData.ToArray();
         }
 
         public static TEXData GetVFX(int offset, string datName)
@@ -183,6 +325,7 @@ namespace FFXIV_TexTools2.Material
             var VFXData = Helper.GetType2DecompressedData(offset, datNum, datName);
 
             TEXData texData = new TEXData();
+            texData.TexOffset = offset;
 
             using(BinaryReader br = new BinaryReader(new MemoryStream(VFXData)))
             {
@@ -198,14 +341,39 @@ namespace FFXIV_TexTools2.Material
 
                 br.ReadBytes(64);
 
-                texData.RawTexData = br.ReadBytes(VFXData.Length - 80);
+                var rawData = br.ReadBytes(VFXData.Length - 80);
 
                 texData.TypeString = Info.TextureTypes[texData.Type];
-                texData.BMP = TextureToBitmap(texData.RawTexData, texData.Type, texData.Width, texData.Height);
+                TextureToBitmap(rawData, texData);
+
                 texData.TEXDatName = datName;
             }
 
             return texData;
+        }
+
+        public static byte[] GetRawVFX(TEXData td)
+        {
+            int datNum = ((td.TexOffset / 8) & 0x0F) / 2;
+
+            var VFXData = Helper.GetType2DecompressedData(td.TexOffset, datNum, td.TEXDatName);
+
+            using (BinaryReader br = new BinaryReader(new MemoryStream(VFXData)))
+            {
+                br.BaseStream.Seek(4, SeekOrigin.Begin);
+
+                var type = br.ReadInt32();
+                var width = br.ReadInt16();
+                var height = br.ReadInt16();
+
+                br.ReadBytes(2);
+
+                var mipCount = br.ReadInt16();
+
+                br.ReadBytes(64);
+
+                return br.ReadBytes(VFXData.Length - 80);
+            }
         }
 
         /// <summary>
@@ -216,54 +384,63 @@ namespace FFXIV_TexTools2.Material
         /// <param name="width">The textures width.</param>
         /// <param name="height">The textures height.</param>
         /// <returns>The created bitmap.</returns>
-        public static Bitmap TextureToBitmap(byte[] decompressedData, int textureType, int width, int height)
+        //public static Bitmap TextureToBitmap(byte[] decompressedData, int textureType, int width, int height)
+        public static void TextureToBitmap(byte[] decompressedData, TEXData texData)
         {
-            Bitmap bmp = null;
+            BitmapSource bmpSource;
+            var width = texData.Width;
+            var height = texData.Height;
+            Tuple<BitmapSource, BitmapSource> bmps = null;
 
-            byte[] decompressedTextureData;
+              byte[] decompressedTextureData;
 
-            switch (textureType)
+            switch (texData.Type)
             {
                 case TextureTypes.DXT1:
                     decompressedTextureData = DxtUtil.DecompressDxt1(decompressedData, width, height);
-                    bmp = ReadLinearImage(decompressedTextureData, width, height);
+                    bmps = Read32bitBitmapImageAlphaDXT(decompressedTextureData, width, height);
                     break;
 
                 case TextureTypes.DXT3:
                     decompressedTextureData = DxtUtil.DecompressDxt3(decompressedData, width, height);
-                    bmp = ReadLinearImage(decompressedTextureData, width, height);
+                    bmps = Read32bitBitmapImageAlphaDXT(decompressedTextureData, width, height);
                     break;
 
                 case TextureTypes.DXT5:
                     decompressedTextureData = DxtUtil.DecompressDxt5(decompressedData, width, height);
-                    bmp = ReadLinearImage(decompressedTextureData, width, height);
+                    bmps = Read32bitBitmapImageAlphaDXT(decompressedTextureData, width, height);
                     break;
 
                 case TextureTypes.A8:
                 case TextureTypes.L8:
-                    bmp = Read8bitImage(decompressedData, width, height);
+                    bmpSource = Read8bitBitmapImage(decompressedData, width, height);
+                    bmps = new Tuple<BitmapSource, BitmapSource>(bmpSource, bmpSource);
                     break;
 
                 case TextureTypes.A4R4G4B4:
-                    bmp = Read4444Image(decompressedData, width, height);
+                    bmps = Read4444BMPSource(decompressedData, width, height);
                     break;
 
                 case TextureTypes.A1R5G5B5:
-                    bmp = Read5551Image(decompressedData, width, height);
-                    //bmp = new Bitmap(width, height, width * 2, System.Drawing.Imaging.PixelFormat.Format16bppArgb1555, Marshal.UnsafeAddrOfPinnedArrayElement(decompressedData, 0));
+                    bmps = Read5551BMPSource(decompressedData, width, height);
                     break;
 
                 case TextureTypes.A8R8G8B8:
                 case TextureTypes.X8R8G8B8:
-                    bmp = new Bitmap(width, height, width * 4, System.Drawing.Imaging.PixelFormat.Format32bppArgb, Marshal.UnsafeAddrOfPinnedArrayElement(decompressedData, 0));
+                    bmps = Read32bitBitmapImageAlpha(decompressedData, width, height);
                     break;
-
-                case TextureTypes.A16B16G16R16F:
-                    bmp = ReadRGBAFImage(decompressedData, width, height);
-                    break;
+                //case TextureTypes.A16B16G16R16F:
+                //    bmp = ReadRGBAFImage(decompressedData, width, height);
+                //    break;
             }
 
-            return bmp;
+            texData.BMPSouceAlpha = bmps.Item1;
+            texData.BMPSouceNoAlpha = bmps.Item2;
+        }
+
+        public static Bitmap ColorSetToBitmap(byte[] decompressedData)
+        {
+            return ReadRGBAFImage(decompressedData, 4, 16);
         }
 
         /// <summary>
@@ -400,6 +577,49 @@ namespace FFXIV_TexTools2.Material
             return bmp;
         }
 
+        private static Tuple<BitmapSource, BitmapSource> Read4444BMPSource(byte[] textureData, int width, int height)
+        {
+            List<byte> noAlphaBMP = new List<byte>();
+            List<byte> alphaBMP = new List<byte>();
+
+            using (MemoryStream ms = new MemoryStream(textureData))
+            {
+                using (BinaryReader br = new BinaryReader(ms))
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        for (int x = 0; x < width; x++)
+                        {
+                            int pixel = br.ReadUInt16() & 0xFFFF;
+                            int red = ((pixel & 0xF)) * 16;
+                            int green = ((pixel & 0xF0) >> 4) * 16;
+                            int blue = ((pixel & 0xF00) >> 8) * 16;
+                            int alpha = ((pixel & 0xF000) >> 12) * 16;
+
+                            noAlphaBMP.Add((byte)blue);
+                            noAlphaBMP.Add((byte)green);
+                            noAlphaBMP.Add((byte)red);
+                            noAlphaBMP.Add(255);
+
+                            alphaBMP.Add((byte)blue);
+                            alphaBMP.Add((byte)green);
+                            alphaBMP.Add((byte)red);
+                            alphaBMP.Add((byte)alpha);
+                            //bmp.SetPixel(x, y, Color.FromArgb(alpha, red, green, blue));
+                        }
+                    }
+                }
+            }
+
+            var pixelFormat = PixelFormats.Bgra32;
+            var bpp = (pixelFormat.BitsPerPixel + 7) / 8;
+            var stride = bpp * width;
+
+            var alphaBMPSouce = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, alphaBMP.ToArray(), stride);
+            var noAlphaBMPSource = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, noAlphaBMP.ToArray(), stride);
+            return new Tuple<BitmapSource, BitmapSource>(alphaBMPSouce, noAlphaBMPSource);
+        }
+
         /// <summary>
         /// Creates bitmap from decompressed A1R5G5B5 texture data.
         /// </summary>
@@ -432,6 +652,47 @@ namespace FFXIV_TexTools2.Material
             return bmp;
         }
 
+        private static Tuple<BitmapSource, BitmapSource> Read5551BMPSource(byte[] textureData, int width, int height)
+        {
+            List<byte> noAlphaBMP = new List<byte>();
+            List<byte> alphaBMP = new List<byte>();
+
+            using (MemoryStream ms = new MemoryStream(textureData))
+            {
+                using (BinaryReader br = new BinaryReader(ms))
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        for (int x = 0; x < width; x++)
+                        {
+                            int pixel = br.ReadUInt16() & 0xFFFF;
+                            int red = ((pixel & 0x7E00) >> 10) * 8;
+                            int green = ((pixel & 0x3E0) >> 5) * 8;
+                            int blue = ((pixel & 0x1F)) * 8;
+                            int alpha = ((pixel & 0x8000) >> 15) * 255;
+
+                            noAlphaBMP.Add((byte)blue);
+                            noAlphaBMP.Add((byte)green);
+                            noAlphaBMP.Add((byte)red);
+                            noAlphaBMP.Add(255);
+
+                            alphaBMP.Add((byte)blue);
+                            alphaBMP.Add((byte)green);
+                            alphaBMP.Add((byte)red);
+                            alphaBMP.Add((byte)alpha);
+                        }
+                    }
+                }
+            }
+
+            var pixelFormat = PixelFormats.Bgra32;
+            var bpp = (pixelFormat.BitsPerPixel + 7) / 8;
+            var stride = bpp * width;
+
+            var alphaBMPSouce = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, alphaBMP.ToArray(), stride);
+            var noAlphaBMPSource = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, noAlphaBMP.ToArray(), stride);
+            return new Tuple<BitmapSource, BitmapSource>(alphaBMPSouce, noAlphaBMPSource);
+        }
 
         /// <summary>
         /// Creates bitmap from decompressed A8/L8 texture data.
@@ -466,5 +727,83 @@ namespace FFXIV_TexTools2.Material
             }
             return bmp;
         }
+
+
+        private static BitmapSource Read8bitBitmapImage(byte[] textureData, int width, int height)
+        {
+            var pixelFormat = PixelFormats.Gray8;
+            var bpp = (pixelFormat.BitsPerPixel + 7) / 8;
+            var stride = bpp * width;
+
+            return BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, textureData, stride);
+        }
+
+        private static BitmapSource Read32bitBitmapImage(byte[] textureData, int width, int height)
+        {
+            var pixelFormat = PixelFormats.Bgra32;
+            var bpp = (pixelFormat.BitsPerPixel + 7) / 8;
+            var stride = bpp * width;
+
+            return BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, textureData, stride);
+        }
+
+        private static Tuple<BitmapSource, BitmapSource> Read32bitBitmapImageAlpha(byte[] textureData, int width, int height)
+        {
+            byte[] textureDataAlpha = new byte[textureData.Length];
+            for (int i = 0; i < textureData.Length; i += 4)
+            {
+                byte r = textureData[i];
+                byte g = textureData[i + 1];
+                byte b = textureData[i + 2];
+                byte a = textureData[i + 3];
+
+                textureData[i] = r;
+                textureData[i + 2] = b;
+                textureData[i + 3] = 255;
+
+                textureDataAlpha[i] = r;
+                textureDataAlpha[i + 1] = g;
+                textureDataAlpha[i + 2] = b;
+                textureDataAlpha[i + 3] = a;
+            }
+
+            var pixelFormat = PixelFormats.Bgra32;
+            var bpp = (pixelFormat.BitsPerPixel + 7) / 8;
+            var stride = bpp * width;
+
+            var alphaBMPSouce = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, textureDataAlpha, stride);
+            var noAlphaBMPSource = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, textureData, stride);
+            return new Tuple<BitmapSource, BitmapSource>(alphaBMPSouce, noAlphaBMPSource);
+        }
+
+        private static Tuple<BitmapSource, BitmapSource> Read32bitBitmapImageAlphaDXT(byte[] textureData, int width, int height)
+        {
+            byte[] textureDataAlpha = new byte[textureData.Length];
+            for (int i = 0; i < textureData.Length; i += 4)
+            {
+                byte r = textureData[i];
+                byte g = textureData[i + 1];
+                byte b = textureData[i + 2];
+                byte a = textureData[i + 3];
+
+                textureData[i] = b;
+                textureData[i + 2] = r;
+                textureData[i + 3] = 255;
+
+                textureDataAlpha[i] = b;
+                textureDataAlpha[i + 1] = g;
+                textureDataAlpha[i + 2] = r;
+                textureDataAlpha[i + 3] = a;
+            }
+
+            var pixelFormat = PixelFormats.Bgra32;
+            var bpp = (pixelFormat.BitsPerPixel + 7) / 8;
+            var stride = bpp * width;
+
+            var alphaBMPSouce = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, textureDataAlpha, stride);
+            var noAlphaBMPSource = BitmapSource.Create(width, height, 96d, 96d, pixelFormat, null, textureData, stride);
+            return new Tuple<BitmapSource, BitmapSource>(alphaBMPSouce, noAlphaBMPSource);
+        }
     }
 }
+

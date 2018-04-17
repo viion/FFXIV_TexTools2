@@ -80,11 +80,24 @@ namespace FFXIV_TexTools2.ViewModel
 
             if (!Properties.Settings.Default.FFXIV_Directory.Contains("ffxiv"))
             {
-                SetDirectories();
+                SetDirectories(true);
             }
             else
             {
-                runStartup();
+                var indexCheck = Properties.Settings.Default.FFXIV_Directory + "\\0a0000.win32.index";
+                if (File.Exists(indexCheck))
+                {
+                    var fileDate = File.GetLastWriteTime(indexCheck);
+                    if (fileDate.Year >= 2018)
+                    {
+                        runStartup();
+                    }
+                    else
+                    {
+                        SetDirectories(false);
+                    }
+                }
+
             }
 
 
@@ -277,10 +290,22 @@ namespace FFXIV_TexTools2.ViewModel
                  "A new modlist will be created, you may remove the old modlist from the ffxiv folder. \n\n" + e.Message, "ModList Error " + Info.appVersion, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
-            string mpDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\TexTools\\ModPacks";
-            if (!Directory.Exists(mpDir))
+            string mpDir = Properties.Settings.Default.ModPack_Directory;
+            if (mpDir.Equals(""))
             {
-                Directory.CreateDirectory(mpDir);
+                mpDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\TexTools\\ModPacks";
+                if (!Directory.Exists(mpDir))
+                {
+                    Directory.CreateDirectory(mpDir);
+                    Properties.Settings.Default.ModPack_Directory = mpDir;
+                    Properties.Settings.Default.Save();
+                }
+                else
+                {
+                    Properties.Settings.Default.ModPack_Directory = mpDir;
+                    Properties.Settings.Default.Save();
+
+                }
             }
         }
 
@@ -288,6 +313,7 @@ namespace FFXIV_TexTools2.ViewModel
         private void IDSearch(object obj)
         {
             ModelSearch modelSearch = new ModelSearch(this);
+            modelSearch.Owner = App.Current.MainWindow;
             modelSearch.Show();
         }
 
@@ -295,79 +321,129 @@ namespace FFXIV_TexTools2.ViewModel
         /// <summary>
         /// Asks for game directory and sets default save directory
         /// </summary>
-        private void SetDirectories()
+        private void SetDirectories(bool valid)
         {
-            string[] commonInstallDirectories = new string[]
+            if (valid)
             {
+                string[] commonInstallDirectories = new string[]
+{
                 "C:/Program Files (x86)/SquareEnix/FINAL FANTASY XIV - A Realm Reborn/game/sqpack/ffxiv",
                 "C:/Program Files/SquareEnix/FINAL FANTASY XIV - A Realm Reborn/game/sqpack/ffxiv",
                 "C:/Program Files/Steam/SteamApps/common/FINAL FANTASY XIV - A Realm Reborn/game/sqpack/ffxiv",
                 "C:/Program Files/Steam/SteamApps/common/FINAL FANTASY XIV Online/game/sqpack/ffxiv",
                 "C:/Program Files (x86)/Steam/SteamApps/common/FINAL FANTASY XIV - A Realm Reborn/game/sqpack/ffxiv",
                 "C:/Program Files (x86)/Steam/SteamApps/common/FINAL FANTASY XIV Online/game/sqpack/ffxiv"
-            };
+};
 
-            if (Properties.Settings.Default.FFXIV_Directory.Equals(""))
-            {
-                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools";
-                Directory.CreateDirectory(md);
-                Properties.Settings.Default.Save_Directory = md;
-                Properties.Settings.Default.Save();
-
-                var installDirectory = "";
-                foreach (var i in commonInstallDirectories)
+                if (Properties.Settings.Default.FFXIV_Directory.Equals(""))
                 {
-                    if (Directory.Exists(i))
+                    var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/Saved";
+                    Directory.CreateDirectory(md);
+                    Properties.Settings.Default.Save_Directory = md;
+                    Properties.Settings.Default.Save();
+
+                    var installDirectory = "";
+                    foreach (var i in commonInstallDirectories)
                     {
-                        if (FlexibleMessageBox.Show("FFXIV install directory found at \n\n" + i + "\n\nUse this directory? ", "Install Directory Found",MessageBoxButtons.YesNo,MessageBoxIcon.Question) == DialogResult.Yes)
+                        if (Directory.Exists(i))
                         {
-                            installDirectory = i;
+                            if (FlexibleMessageBox.Show("FFXIV install directory found at \n\n" + i + "\n\nUse this directory? ", "Install Directory Found", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                            {
+                                installDirectory = i;
+                                Properties.Settings.Default.FFXIV_Directory = installDirectory;
+                                Properties.Settings.Default.Save();
+                            }
+                            break;
+                        }
+                    }
+
+                    if (installDirectory.Equals(""))
+                    {
+                        if (FlexibleMessageBox.Show("Please locate the following directory. \n\n .../FINAL FANTASY XIV - A Realm Reborn/game/sqpack/ffxiv", "Install Directory Not Found", MessageBoxButtons.OK, MessageBoxIcon.Question) == System.Windows.Forms.DialogResult.OK)
+                        {
+                            while (!installDirectory.Contains("ffxiv"))
+                            {
+                                FolderSelectDialog folderSelect = new FolderSelectDialog()
+                                {
+                                    Title = "Select sqpack/ffxiv Folder"
+                                };
+                                bool result = folderSelect.ShowDialog();
+                                if (result)
+                                {
+                                    installDirectory = folderSelect.FileName;
+                                }
+                                else
+                                {
+                                    Environment.Exit(0);
+                                }
+                            }
+
                             Properties.Settings.Default.FFXIV_Directory = installDirectory;
                             Properties.Settings.Default.Save();
                         }
-                        break;
-                    }
-                }
-
-                if (installDirectory.Equals(""))
-                {
-                    if (FlexibleMessageBox.Show("Please locate the following directory. \n\n .../FINAL FANTASY XIV - A Realm Reborn/game/sqpack/ffxiv", "Install Directory Not Found",MessageBoxButtons.OK,MessageBoxIcon.Question) == System.Windows.Forms.DialogResult.OK)
-                    {
-                        while (!installDirectory.Contains("ffxiv"))
+                        else
                         {
-                            FolderSelectDialog folderSelect = new FolderSelectDialog()
-                            {
-                                Title = "Select sqpack/ffxiv Folder"
-                            };
-                            bool result = folderSelect.ShowDialog();
-                            if (result)
-                            {
-                                installDirectory = folderSelect.FileName;
-                            }
-                            else
-                            {
-                                Environment.Exit(0);
-                            }
+                            Environment.Exit(0);
                         }
+                    }
+                }
 
-                        Properties.Settings.Default.FFXIV_Directory = installDirectory;
-                        Properties.Settings.Default.Save();
-                    }
-                    else
+                if (Properties.Settings.Default.Save_Directory.Equals(""))
+                {
+                    var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/Saved";
+                    Directory.CreateDirectory(md);
+                    Properties.Settings.Default.Save_Directory = md;
+                    Properties.Settings.Default.Save();
+                }
+                runStartup();
+            }
+            else
+            {
+                if (FlexibleMessageBox.Show("The install location chosen is out of date \n\nPlease locate the following directory. \n\n " +
+                                            ".../FINAL FANTASY XIV - A Realm Reborn/game/sqpack/ffxiv", "Install Directory Not Found", MessageBoxButtons.OK, MessageBoxIcon.Question) == System.Windows.Forms.DialogResult.OK)
+                {
+                    var installDirectory = "";
+
+                    while (!installDirectory.Contains("ffxiv"))
                     {
-                        Environment.Exit(0);
+                        FolderSelectDialog folderSelect = new FolderSelectDialog()
+                        {
+                            Title = "Select sqpack/ffxiv Folder"
+                        };
+                        bool result = folderSelect.ShowDialog();
+                        if (result)
+                        {
+                            installDirectory = folderSelect.FileName;
+                        }
+                        else
+                        {
+                            Environment.Exit(0);
+                        }
                     }
+
+                    var indexCheck = installDirectory + "\\040000.win32.index";
+                    if (File.Exists(indexCheck))
+                    {
+                        var fileDate = File.GetLastWriteTime(indexCheck);
+                        if (fileDate.Year >= 2018)
+                        {
+                            Properties.Settings.Default.FFXIV_Directory = installDirectory;
+                            Properties.Settings.Default.Save();
+
+                            runStartup();
+                        }
+                        else
+                        {
+                            SetDirectories(false);
+                        }
+                    }
+                }
+                else
+                {
+                    Environment.Exit(0);
                 }
             }
 
-            if (Properties.Settings.Default.Save_Directory.Equals(""))
-            {
-                var md = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools";
-                Directory.CreateDirectory(md);
-                Properties.Settings.Default.Save_Directory = md;
-                Properties.Settings.Default.Save();
-            }
-            runStartup();
         }
 
         /// <summary>
@@ -471,25 +547,34 @@ namespace FFXIV_TexTools2.ViewModel
         public void FillTree()
         {
             var exdDict = ExdReader.GetEXDData();
-
-            foreach(var cat in Info.MainCategoryList)
+            if (exdDict == null)
             {
+                Properties.Settings.Default.FFXIV_Directory = "";
+                Properties.Settings.Default.Language = "en";
+                Properties.Settings.Default.Save();
+                System.Windows.Application.Current.Shutdown();
+            }
+            else
+            {
+                foreach (var cat in Info.MainCategoryList)
+                {
 
-                TreeNode cm = new TreeNode
-                {
-                    Name = cat,
-                    _subNode = exdDict[cat]
-                };
-                if (Category == null)
-                {
-                    Category = new ObservableCollection<CategoryViewModel>();
+                    TreeNode cm = new TreeNode
+                    {
+                        Name = cat,
+                        _subNode = exdDict[cat]
+                    };
+                    if (Category == null)
+                    {
+                        Category = new ObservableCollection<CategoryViewModel>();
+                    }
+
+                    var cvm = new CategoryViewModel(cm);
+                    Category.Add(cvm);
                 }
 
-                var cvm = new CategoryViewModel(cm);
-                Category.Add(cvm);
+                oCategory = Category;
             }
-
-            oCategory = Category;
         }
 
 
@@ -693,7 +778,7 @@ namespace FFXIV_TexTools2.ViewModel
                             br.ReadBytes(8);
                             int offset = br.ReadInt32();
 
-                            int datNum = (offset & 0x000f) / 2;
+                            int datNum = (offset & 0xF) / 2;
 
                             if (indexFile.Key.Equals(Strings.ItemsDat))
                             {
@@ -736,7 +821,7 @@ namespace FFXIV_TexTools2.ViewModel
                         {
                             br.ReadBytes(4);
                             int offset = br.ReadInt32();
-                            int datNum = (offset & 0x000f) / 2;
+                            int datNum = (offset & 0xF) / 2;
 
                             if (indexFile.Key.Equals(Strings.ItemsDat))
                             {

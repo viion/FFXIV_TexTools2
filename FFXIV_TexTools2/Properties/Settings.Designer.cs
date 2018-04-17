@@ -12,7 +12,7 @@ namespace FFXIV_TexTools2.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.3.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.6.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -116,6 +116,66 @@ namespace FFXIV_TexTools2.Properties {
             }
             set {
                 this["Default_Race"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ModPack_Directory {
+            get {
+                return ((string)(this["ModPack_Directory"]));
+            }
+            set {
+                this["ModPack_Directory"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#FF603913")]
+        public string Hair_Color {
+            get {
+                return ((string)(this["Hair_Color"]));
+            }
+            set {
+                this["Hair_Color"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#FF603913")]
+        public string Iris_Color {
+            get {
+                return ((string)(this["Iris_Color"]));
+            }
+            set {
+                this["Iris_Color"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#FFFFFFFF")]
+        public string Skin_Color {
+            get {
+                return ((string)(this["Skin_Color"]));
+            }
+            set {
+                this["Skin_Color"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#FF603913")]
+        public string Etc_Color {
+            get {
+                return ((string)(this["Etc_Color"]));
+            }
+            set {
+                this["Etc_Color"] = value;
             }
         }
     }

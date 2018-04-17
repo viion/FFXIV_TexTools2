@@ -28,10 +28,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 namespace FFXIV_TexTools2.ViewModel
@@ -79,8 +77,7 @@ namespace FFXIV_TexTools2.ViewModel
         public bool Import3DEnabled { get { return import3dEnabled; } set { import3dEnabled = value; NotifyPropertyChanged("Import3DEnabled"); } }
         public bool AdvImport3DEnabled { get { return advImport3dEnabled; } set { advImport3dEnabled = value; NotifyPropertyChanged("AdvImport3DEnabled"); } }
         public bool ActiveEnabled { get { return activeEnabled; } set { activeEnabled = value; NotifyPropertyChanged("ActiveEnabled"); } }
-        public bool OpenEnabled { get { return openEnabled; } set { openEnabled = value; NotifyPropertyChanged("OpenEnabled"); } }
-
+        public bool Open3DEnabled { get { return openEnabled; } set { openEnabled = value; NotifyPropertyChanged("Open3DEnabled"); } }
 
         public bool ModelRendering { get { return modelRendering; } set { modelRendering = value; NotifyPropertyChanged("ModelRendering"); } }
         public bool SecondModelRendering { get { return secondModelRendering; } set { secondModelRendering = value; NotifyPropertyChanged("SecondModelRendering"); } }
@@ -363,6 +360,7 @@ namespace FFXIV_TexTools2.ViewModel
                 if (result)
                 {
                     Import3DEnabled = true;
+                    AdvImport3DEnabled = true;
                 }
             }
             catch (Exception ex)
@@ -372,7 +370,7 @@ namespace FFXIV_TexTools2.ViewModel
             }
             */
 
-            OpenEnabled = true;
+            Open3DEnabled = true;
         }
 
         /// <summary>
@@ -413,10 +411,9 @@ namespace FFXIV_TexTools2.ViewModel
             if (!Helper.IsIndexLocked(true))
             {
                 var savePath = Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItem.ItemName + "/3D/" + modelName + ".DAE";
-                AdvImport advImport = new AdvImport(this, savePath, selectedCategory, selectedItem, modelName, SelectedMesh.ID, fullPath, meshList[0].BoneStrings, modelData);
+                AdvImport advImport = new AdvImport(this, savePath, selectedCategory, selectedItem, modelName, SelectedMesh.ID, fullPath, meshList[0].BoneStrings, meshList[0].AttributeStrings, modelData);
+                advImport.Owner = App.Current.MainWindow;
                 advImport.Show();
-                //ImportModel.ImportDAE(selectedCategory, selectedItem.ItemName, modelName, SelectedMesh.ID, fullPath, meshList[0].BoneStrings, modelData);
-                //UpdateModel(selectedItem, selectedCategory);
             }
         }
 
@@ -967,9 +964,6 @@ namespace FFXIV_TexTools2.ViewModel
                                 normalBMP = maps[2];
                                 alphaBMP = maps[3];
                                 emissiveBMP = maps[4];
-
-                                normalData.Dispose();
-                                maskData.Dispose();
                             }
                             else
                             {
@@ -981,31 +975,29 @@ namespace FFXIV_TexTools2.ViewModel
                                     diffuseData = TEX.GetTex(mtrlData.DiffuseOffset, Strings.ItemsDat);
                                 }
 
-                                var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData);
+                                var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData, selectedItem.ItemName, mtrlData.MTRLPath);
 
                                 diffuseBMP = maps[0];
                                 specularBMP = maps[1];
                                 normalBMP = maps[2];
                                 alphaBMP = maps[3];
-
-                                specularData.Dispose();
-                                normalData.Dispose();
-                                if (diffuseData != null)
-                                {
-                                    diffuseData.Dispose();
-                                }
                             }
                         }
 
                         if (selectedItem.ItemName.Equals(Strings.Body))
                         {
                             normalData = TEX.GetTex(mtrlData.NormalOffset, Strings.ItemsDat);
-                            //specularTI = TEX.GetTex(mInfo.SpecularOffset);
+                            specularData = TEX.GetTex(mtrlData.SpecularOffset, Strings.ItemsDat);
                             diffuseData = TEX.GetTex(mtrlData.DiffuseOffset, Strings.ItemsDat);
 
                             isBody = true;
-                            diffuseBMP = Imaging.CreateBitmapSourceFromHBitmap(diffuseData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                            normalBMP = Imaging.CreateBitmapSourceFromHBitmap(normalData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+
+                            var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData, selectedItem.ItemName, mtrlData.MTRLPath);
+
+                            diffuseBMP = maps[0];
+                            specularBMP = maps[1];
+                            normalBMP = maps[2];
+                            alphaBMP = maps[3];
                         }
 
                         if (selectedItem.ItemName.Equals(Strings.Face))
@@ -1017,20 +1009,16 @@ namespace FFXIV_TexTools2.ViewModel
                                 specularData = TEX.GetTex(mtrlData.SpecularOffset, Strings.ItemsDat);
                                 diffuseData = TEX.GetTex(mtrlData.DiffuseOffset, Strings.ItemsDat);
 
-                                var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData);
+                                var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData, selectedItem.ItemName, mtrlData.MTRLPath);
 
                                 diffuseBMP = maps[0];
                                 specularBMP = maps[1];
                                 normalBMP = maps[2];
                                 alphaBMP = maps[3];
                                 isFace = true;
-
-                                specularData.Dispose();
-                                diffuseData.Dispose();
                             }
                             else
                             {
-
                                 if (mtrlData.ColorData != null)
                                 {
                                     specularData = TEX.GetTex(mtrlData.SpecularOffset, Strings.ItemsDat);
@@ -1045,15 +1033,13 @@ namespace FFXIV_TexTools2.ViewModel
                                 else
                                 {
                                     specularData = TEX.GetTex(mtrlData.SpecularOffset, Strings.ItemsDat);
-                                    var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData);
+                                    var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData, selectedItem.ItemName, mtrlData.MTRLPath);
 
                                     diffuseBMP = maps[0];
                                     specularBMP = maps[1];
                                     normalBMP = maps[2];
                                     alphaBMP = maps[3];
                                 }
-
-
                             }
                         }
                     }
@@ -1065,27 +1051,34 @@ namespace FFXIV_TexTools2.ViewModel
                             normalData = TEX.GetTex(mtrlData.NormalOffset, Strings.ItemsDat);
                         }
 
-                        if (mtrlData.MaskOffset != 0)
-                        {
-                            maskData = TEX.GetTex(mtrlData.MaskOffset, Strings.ItemsDat);
-                            maskBMP = Imaging.CreateBitmapSourceFromHBitmap(maskData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                        }
+                        //if (mtrlData.MaskOffset != 0)
+                        //{
+                        //    maskData = TEX.GetTex(mtrlData.MaskOffset, Strings.ItemsDat);
+                        //    maskBMP = Imaging.CreateBitmapSourceFromHBitmap(maskData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                        //}
 
                         if (mtrlData.DiffuseOffset != 0)
                         {
                             diffuseData = TEX.GetTex(mtrlData.DiffuseOffset, Strings.ItemsDat);
+                            specularData = TEX.GetTex(mtrlData.SpecularOffset, Strings.ItemsDat);
                             if (mtrlData.DiffusePath.Contains("human") && !mtrlData.DiffusePath.Contains("demi"))
                             {
                                 isBody = true;
-                                diffuseBMP = Imaging.CreateBitmapSourceFromHBitmap(diffuseData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                                normalBMP = Imaging.CreateBitmapSourceFromHBitmap(normalData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+
+                                var maps = TexHelper.MakeCharacterMaps(normalData, diffuseData, null, specularData, selectedItem.ItemName, mtrlData.MTRLPath);
+
+                                diffuseBMP = maps[0];
+                                specularBMP = maps[1];
+                                normalBMP = maps[2];
+                                alphaBMP = maps[3];
                             }
                         }
 
                         if (!isBody && mtrlData.SpecularOffset != 0)
                         {
                             specularData = TEX.GetTex(mtrlData.SpecularOffset, Strings.ItemsDat);
-                            specularBMP = Imaging.CreateBitmapSourceFromHBitmap(specularData.BMP.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+
+                            specularBMP = specularData.BMPSouceAlpha;
                         }
 
                         if (!isBody && specularData == null)
@@ -1106,27 +1099,13 @@ namespace FFXIV_TexTools2.ViewModel
                             alphaBMP = maps[3];
                             emissiveBMP = maps[4];
                         }
-
-                        if (normalData != null)
-                        {
-                            normalData.Dispose();
-                        }
-
-                        if (maskData != null)
-                        {
-                            maskData.Dispose();
-                        }
-
-                        if (diffuseData != null)
-                        {
-                            diffuseData.Dispose();
-                        }
-
-                        if (specularData != null)
-                        {
-                            specularData.Dispose();
-                        }
                     }
+
+                    specularBMP?.Freeze();
+                    diffuseBMP?.Freeze();
+                    normalBMP?.Freeze();
+                    alphaBMP?.Freeze();
+                    emissiveBMP?.Freeze();
 
                     var mData = new MDLTEXData()
                     {
@@ -1172,14 +1151,7 @@ namespace FFXIV_TexTools2.ViewModel
                 if (File.Exists(Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItem.ItemName + "/3D/" + modelName + ".DAE"))
                 {
                     Import3DEnabled = true;
-                    if(modelData.ExtraData.totalExtraCounts != null && modelData.ExtraData.totalExtraCounts.Count > 0)
-                    {
-                        AdvImport3DEnabled = true;
-                    }
-                    else
-                    {
-                        AdvImport3DEnabled = false;
-                    }
+                    AdvImport3DEnabled = true;
                 }
                 else
                 {
@@ -1189,7 +1161,7 @@ namespace FFXIV_TexTools2.ViewModel
 
                 if (Directory.Exists(Properties.Settings.Default.Save_Directory + "/" + selectedCategory + "/" + selectedItem.ItemName + "/3D/"))
                 {
-                    OpenEnabled = true;
+                    Open3DEnabled = true;
                 }
                 else
                 {
@@ -1274,7 +1246,16 @@ namespace FFXIV_TexTools2.ViewModel
             }
 
             var part = materialStrings[mNum].Substring(materialStrings[mNum].LastIndexOf("_") + 1, 1);
-            var itemVersion = IMC.GetVersion(selectedCategory, selectedItem, false).Item1;
+            string itemVersion;
+            if (selectedCategory.Equals("DemiHuman"))
+            {
+                itemVersion = IMC.GetVersion(selectedPart.Name, selectedItem, false, true).Item1;
+            }
+            else
+            {
+                itemVersion = IMC.GetVersion(selectedCategory, selectedItem, false, false).Item1;
+            }
+
             var itemType = Helper.GetCategoryType(selectedCategory);
 
             var MTRLFile = materialStrings[mNum].Substring(1);
@@ -1305,7 +1286,7 @@ namespace FFXIV_TexTools2.ViewModel
                         gender = 1;
                     }
 
-                    if (!race.Equals("1101"))
+                    if (!race.Equals("0901") && !race.Equals("1001") && !race.Equals("1101"))
                     {
                         if (Properties.Settings.Default.Default_Race.Equals(Strings.Hyur_M))
                         {
@@ -1353,17 +1334,6 @@ namespace FFXIV_TexTools2.ViewModel
 
                             modelID = "0101";
                         }
-                        else if (Properties.Settings.Default.Default_Race.Equals(Strings.Roegadyn))
-                        {
-                            if (gender == 0)
-                            {
-                                race = "0901";
-                            }
-                            else
-                            {
-                                race = "1001";
-                            }
-                        }
                     }
 
 
@@ -1408,6 +1378,7 @@ namespace FFXIV_TexTools2.ViewModel
             else if (typeChar.Equals("cb") || typeChar.Equals("ct"))
             {
                 var info = MTRL.GetMTRLInfo(Helper.GetDataOffset(FFCRC.GetHash(mtrlFolder), FFCRC.GetHash(MTRLFile), Strings.ItemsDat), true);
+                info.MTRLPath = mtrlFolder + "/" + MTRLFile;
                 return info;
             }
             else

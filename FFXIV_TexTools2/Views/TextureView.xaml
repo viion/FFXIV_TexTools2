@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="387" d:DesignWidth="506">
     <UserControl.Resources>
         <SolidColorBrush x:Key="DarkSquareColor" Color="#CC000000" />
         <SolidColorBrush x:Key="LightSquareColor" Color="#BF000000" />
@@ -62,7 +62,7 @@
                     </DrawingBrush>
                 </Border.Background>
                 <Grid>
-                    <xctk:Zoombox x:Name="zoomBox" DragModifiers="0" ZoomModifiers="0" KeepContentInBounds="True" MinScale="0.2" MaxScale="40" IsAnimated="False" ViewStackMode="Disabled" PanDistance="2">
+                    <xctk:Zoombox x:Name="zoomBox" DragModifiers="0" ZoomModifiers="0" KeepContentInBounds="True" MinScale="0.2" MaxScale="20" IsAnimated="False" ViewStackMode="Disabled" PanDistance="2">
                         <Image x:Name="texImage" RenderOptions.BitmapScalingMode="NearestNeighbor" Effect="{Binding ImageEffect}" Source="{Binding ImageSource, NotifyOnSourceUpdated=True}" />
                     </xctk:Zoombox>
                     <Grid Margin="0" Background="#3FFFFFFF" Height="33" VerticalAlignment="Top" HorizontalAlignment="Right" Width="151" IsEnabled="{Binding ChannelsEnabled, FallbackValue=false}">
@@ -112,11 +112,13 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
+                <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Button Content="Export as Image" Margin="5" Command="{Binding SavePNGCommand}" IsEnabled="{Binding SaveEnabled, FallbackValue=false}"/>
             <Button Content="Export as DDS" Grid.Column="1" Margin="5" Command="{Binding SaveDDSCommand}" IsEnabled="{Binding SaveEnabled, FallbackValue=false}"/>
             <Button Content="Import" Grid.Column="2" Margin="5" Command="{Binding ImportCommand}" IsEnabled="{Binding ImportEnabled, FallbackValue=false}"/>
             <Button Content="{Binding ActiveToggle, FallbackValue='Enable/Disable' }" Grid.Column="3" Margin="5" Command="{Binding ActiveCommand}" IsEnabled="{Binding ActiveEnabled, FallbackValue=false}"/>
+            <Button Content="{Binding TranslucencyToggle, FallbackValue='Translucency Off' }" Grid.Column="4" Margin="5" Command="{Binding TranslucencyCommand}" IsEnabled="{Binding TranslucencyEnabled, FallbackValue=false}"/>
         </Grid>
     </Grid>
 </UserControl>

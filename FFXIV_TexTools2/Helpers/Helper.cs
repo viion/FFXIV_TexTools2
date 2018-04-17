@@ -19,11 +19,14 @@ using FFXIV_TexTools2.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Windows.Forms;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 
 namespace FFXIV_TexTools2.Helpers
@@ -458,6 +461,7 @@ namespace FFXIV_TexTools2.Helpers
             catch(Exception e)
             {
                 DisplayError(e, "3 Data", true, datPath, offset);
+                Debug.WriteLine(e.StackTrace);
             }
 
 
@@ -592,11 +596,11 @@ namespace FFXIV_TexTools2.Helpers
 
             int datNum = ((itemOffset / 8) & 0x0F) / 2;
 
-            if(indexName.Equals(Strings.ItemsDat) && datNum == 4)
+            if(indexName.Equals(Strings.ItemsDat) && datNum >= 4)
             {
                 return true;
             }
-            else if (indexName.Equals(Strings.UIDat) && datNum == 1)
+            else if (indexName.Equals(Strings.UIDat) && datNum >= 1)
             {
                 return true;
             }

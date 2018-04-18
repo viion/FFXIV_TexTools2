@@ -489,6 +489,9 @@ namespace FFXIV_TexTools2
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            //
+            // GEAR
+            //
             CategoryViewModel Gear = (CategoryViewModel)textureTreeView.Items.GetItemAt(0);
             Gear.IsSelected = true;
 
@@ -517,9 +520,41 @@ namespace FFXIV_TexTools2
 
                     File.AppendAllText(logfilename, time + " - Saved: " + item.Name.ToString() + " -- " + mViewModel.getMvm().getModelName() + Environment.NewLine);
                 }
-
-                break;
             }
+
+            //
+            // COMPANIONS
+            //
+            CategoryViewModel Companions = (CategoryViewModel)textureTreeView.Items.GetItemAt(2);
+            Companions.IsSelected = true;
+
+            foreach (CategoryViewModel category in Companions.Children)
+            {
+                category.IsExpanded = true;
+                category.IsSelected = true;
+
+                string time = string.Format("{0:HH:mm:ss tt}", DateTime.Now);
+                string logfilename = "E:\\xivdb\\FFXIV_TextTools2_Output\\log.txt";
+
+                File.AppendAllText(logfilename, time + " - Category: " + category.Name.ToString() + " - Items: " + category.Children.Count.ToString() + Environment.NewLine);
+
+                foreach (CategoryViewModel item in category.Children)
+                {
+                    item.IsExpanded = true;
+                    item.IsSelected = true;
+                    actionSelectedItemChanged(item);
+
+                    SaveModel.Save(
+                        mViewModel.getMvm().getModelName(),
+                        mViewModel.getMvm().getSelectedMeshId(),
+                        mViewModel.getMvm().getMeshData(),
+                        mViewModel.getMvm().getMeshList()
+                    );
+
+                    File.AppendAllText(logfilename, time + " - Saved: " + item.Name.ToString() + " -- " + mViewModel.getMvm().getModelName() + Environment.NewLine);
+                }
+            }
+
         }
 
         private void PKEmporium_Click(object sender, RoutedEventArgs e)
